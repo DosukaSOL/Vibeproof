@@ -3,40 +3,46 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Session = {
   wallet: string | null;
-  setWallet: (w: string | null) => Promise<void>;
+  authToken: string | null;
+  setSession: (next: { wallet: string | null; authToken: string | null }) => Promise<void>;
   loading: boolean;
 };
 
 const SessionContext = createContext<Session | null>(null);
 
-const STORAGE_KEY = 'vibeproof_wallet_v1';
+const STORAGE_WALLET = 'vibeproof_wallet_v2';
+const STORAGE_AUTH = 'vibeproof_authToken_v2';
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
-  const [wallet, _setWallet] = useState<string | null>(null);
+  const [wallet, setWallet] = useState<string | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
-        const saved = await AsyncStorage.getItem(STORAGE_KEY);
-        if (saved) _setWallet(saved);
+        const w = await AsyncStorage.getItem(STORAGE_WALLET);
+        const a = await AsyncStorage.getItem(STORAGE_AUTH);
+        if (w) setWallet(w);
+        if (a) setAuthToken(a);
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  const setWallet = async (w: string | null) => {
-    _setWallet(w);
-    if (!w) {
-      await AsyncStorage.removeItem(STORAGE_KEY);
-    } else {
-      await AsyncStorage.setItem(STORAGE_KEY, w);
-    }
+  const setSession = async (next: { wallet: string | null; authToken: string | null }) => {
+    setWallet(next.wallet);
+    setAuthToken(next.authToken);
+
+    if (next.wallet) await AsyncStorage.setItem(STORAGE_WALLET, next.wallet);
+    else await AsyncStorage.removeItem(STORAGE_WALLET);
+
+    if (next.authToken) await AsyncStorage.setItem(STORAGE_AUTH, next.authToken);
+    else await AsyncStorage.removeItem(STORAGE_AUTH);
   };
 
-  const value = useMemo(() => ({ wallet, setWallet, loading }), [wallet, loading]);
-
+  const value = useMemo(() => ({ wallet, authToken, setSession, loading }), [wallet, authToken, loading]);
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
 
