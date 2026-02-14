@@ -10,6 +10,13 @@ type Quest = {
   description: string | null;
   xp_reward: number;
   active_date: string;
+
+  active?: boolean | null;
+  is_sponsored?: boolean | null;
+  sponsor_name?: string | null;
+  sponsor_url?: string | null;
+  xp_multiplier?: number | null;
+  max_completions?: number | null;
 };
 
 const LEVEL_XP = 1000;
@@ -60,8 +67,9 @@ export default function MissionsHome() {
 
       const { data: qData, error: qErr } = await supabase
         .from('quests')
-        .select('id,title,description,xp_reward,active_date')
+        .select('id,title,description,xp_reward,active_date,active,is_sponsored,sponsor_name,sponsor_url,xp_multiplier,max_completions')       
         .eq('active_date', todayISO)
+        .eq('active', true)
         .order('xp_reward', { ascending: false });
 
       if (qErr) throw qErr;
@@ -106,6 +114,24 @@ const completeQuest = async (quest: Quest) => {
   }
 
   try {
+// Enforce max_completions (global cap)
+if (quest.max_completions && Number(quest.max_completions) > 0) {
+  const { data: stat, error: statErr } = await supabase
+    .from('quest_stats')
+    .select('completion_count')
+    .eq('quest_id', quest.id)
+    .maybeSingle();
+
+  // If no row exists yet, that's fine (treat as 0)
+  if (statErr) throw statErr;
+
+  const currentCount = Number(stat?.completion_count ?? 0);
+
+  if (currentCount >= Number(quest.max_completions)) {
+    Alert.alert('Quest ended', 'This sponsored quest hit its max completions.');
+    return;
+  }
+}
     // 1) Insert completion row (prevents double-completing)
     const { error: insErr } = await supabase.from('quest_completions').insert({
       wallet,
@@ -142,7 +168,9 @@ const completeQuest = async (quest: Quest) => {
       streakNew = last === yesterday ? prevStreak + 1 : 1;
     }
 
-    const questXP = Number(quest.xp_reward ?? 0);
+    const baseXP = Number(quest.xp_reward ?? 0);
+    const mult = Number(quest.xp_multiplier ?? 1);
+    const questXP = Math.max(1, Math.floor(baseXP * mult));   
     const dailyBonus = isFirstActionToday ? 25 + Math.min(75, prevStreak * 5) : 0; // scales with streak
     const gainedXP = questXP + dailyBonus;
 
@@ -245,7 +273,15 @@ const completeQuest = async (quest: Quest) => {
                   {!!item.description && (
                     <Text style={styles.cardDesc}>{item.description}</Text>
                   )}
+{item.is_sponsored ? (
+  <Text style={styles.badge}>
+    Sponsored{item.sponsor_name ? ` • ${item.sponsor_name}` : ''}
+  </Text>
+) : null}
 
+{item.is_sponsored && item.sponsor_url ? (
+  <Text style={styles.sponsorUrl}>{item.sponsor_url}</Text>
+) : null}
                   <View style={styles.cardRow}>
                     <Text style={styles.xp}>+{item.xp_reward} XP</Text>
 
@@ -277,6 +313,19 @@ const completeQuest = async (quest: Quest) => {
 }
 
 const styles = StyleSheet.create({
+
+badge: {
+  alignSelf: 'flex-start',
+  paddingVertical: 4,
+  paddingHorizontal: 8,
+  borderRadius: 999,
+  borderWidth: 1,
+  borderColor: '#111',
+  fontWeight: '900',
+  color: '#000',
+  marginTop: 6,
+},
+sponsorUrl: { opacity: 0.6, fontSize: 12, color: '#000' },
   container: { flex: 1, padding: 16, backgroundColor: '#fff', gap: 10 },
 
   title: { fontSize: 34, fontWeight: '800', color: '#000' },
