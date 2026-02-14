@@ -11,6 +11,17 @@ type Quest = {
   active_date: string;
 };
 
+const LEVEL_XP = 1000;
+
+function ProgressBar({ progress }: { progress: number }) {
+  const pct = Math.max(0, Math.min(1, progress));
+  return (
+    <View style={styles.barOuter}>
+      <View style={[styles.barInner, { width: `${Math.round(pct * 100)}%` }]} />
+    </View>
+  );
+}
+
 export default function MissionsHome() {
   const { wallet, setWallet, loading: sessionLoading } = useSession();
   const [walletDraft, setWalletDraft] = useState(wallet ?? '');
@@ -79,9 +90,18 @@ export default function MissionsHome() {
     setCompletedQuestIds(new Set());
   };
 
+  const calcStreakNext = (last: string | null) => {
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    if (last === todayISO) return null; // already checked in today
+    if (last === yesterday) return 'keep'; // streak continues
+    return 'reset'; // streak resets to 1
+  };
+
   const completeQuest = async (quest: Quest) => {
     if (!wallet) return;
+
     try {
+      // Insert completion
       const { error: insErr } = await supabase.from('quest_completions').insert({
         wallet,
         quest_id: quest.id,
@@ -92,18 +112,26 @@ export default function MissionsHome() {
         throw insErr;
       }
 
+      // Fetch user row
       const { data: uData, error: uErr } = await supabase.from('users').select('*').eq('wallet', wallet).single();
       if (uErr) throw uErr;
 
-      const xpNew = Number(uData.xp ?? 0) + Number(quest.xp_reward);
-      const levelNew = Math.floor(xpNew / 1000) + 1;
-
       const last = uData.last_checkin_date as string | null;
-      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      const streakMode = calcStreakNext(last);
+
+      // Daily streak bonus: first completion of the day gives bonus XP
+      // (only if last_checkin_date != today)
+      const dailyBonus = streakMode ? 25 + Math.min(75, (Number(uData.streak ?? 0) * 5)) : 0; // scales with streak
+      const questXP = Number(quest.xp_reward);
+      const gainedXP = questXP + dailyBonus;
+
+      const xpNew = Number(uData.xp ?? 0) + gainedXP;
+      const levelNew = Math.floor(xpNew / LEVEL_XP) + 1;
 
       let streakNew = Number(uData.streak ?? 0);
-      if (last === todayISO) {
-      } else if (last === yesterday) {
+      if (!streakMode) {
+        // already checked in today, keep streak
+      } else if (streakMode === 'keep') {
         streakNew = streakNew + 1;
       } else {
         streakNew = 1;
@@ -119,22 +147,32 @@ export default function MissionsHome() {
       setCompletedQuestIds(new Set([...Array.from(completedQuestIds), quest.id]));
       setUserStats({ xp: xpNew, level: levelNew, streak: streakNew });
 
-      Alert.alert('Quest complete!', `+${quest.xp_reward} XP`);
+      if (dailyBonus > 0) {
+        Alert.alert('Quest complete!', `+${questXP} XP\n+${dailyBonus} Daily bonus 🎁`);
+      } else {
+        Alert.alert('Quest complete!', `+${questXP} XP`);
+      }
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Failed to complete quest');
     }
   };
 
-  // If wallet is already saved, auto-load once user taps refresh (keeps it simple & stable)
-  // You can also auto-load on mount later.
   const showLogin = sessionLoading || !wallet;
+
+  // derived progress for UI
+  const xp = userStats?.xp ?? 0;
+  const level = userStats?.level ?? 1;
+  const streak = userStats?.streak ?? 0;
+  const xpIntoLevel = xp % LEVEL_XP;
+  const xpToNext = LEVEL_XP - xpIntoLevel;
+  const progress = xpIntoLevel / LEVEL_XP;
 
   return (
     <View style={styles.container}>
       {showLogin ? (
         <>
           <Text style={styles.title}>VibeProof</Text>
-          <Text style={styles.subtitle}>MVP login: paste your wallet (we’ll add Seeker connect next)</Text>
+          <Text style={styles.subtitle}>MVP login: paste your wallet (Seeker connect soon)</Text>
 
           <TextInput
             value={walletDraft}
@@ -152,19 +190,26 @@ export default function MissionsHome() {
         </>
       ) : (
         <>
-          <View style={styles.topRow}>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Level</Text>
-              <Text style={styles.statValue}>{userStats?.level ?? '-'}</Text>
+          <View style={styles.topCard}>
+            <View style={styles.topRow}>
+              <View style={styles.stat}>
+                <Text style={styles.statLabel}>Level</Text>
+                <Text style={styles.statValue}>{level}</Text>
+              </View>
+              <View style={styles.stat}>
+                <Text style={styles.statLabel}>Streak</Text>
+                <Text style={styles.statValue}>{streak}🔥</Text>
+              </View>
+              <View style={styles.stat}>
+                <Text style={styles.statLabel}>Total XP</Text>
+                <Text style={styles.statValue}>{xp}</Text>
+              </View>
             </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>XP</Text>
-              <Text style={styles.statValue}>{userStats?.xp ?? '-'}</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Streak</Text>
-              <Text style={styles.statValue}>{userStats?.streak ?? '-'}🔥</Text>
-            </View>
+
+            <Text style={styles.progressLabel}>
+              {xpIntoLevel}/{LEVEL_XP} XP • {xpToNext} to next level
+            </Text>
+            <ProgressBar progress={progress} />
           </View>
 
           <Text style={styles.h1}>Today’s Missions</Text>
@@ -220,10 +265,15 @@ const styles = StyleSheet.create({
   button: { padding: 14, borderRadius: 10, alignItems: 'center', backgroundColor: '#111' },
   buttonText: { color: 'white', fontWeight: '700' },
 
-  topRow: { flexDirection: 'row', gap: 10, marginBottom: 8 },
-  statCard: { flex: 1, borderWidth: 1, borderColor: '#eee', borderRadius: 14, padding: 12, gap: 4 },
+  topCard: { borderWidth: 1, borderColor: '#eee', borderRadius: 16, padding: 14, gap: 10 },
+  topRow: { flexDirection: 'row', gap: 10 },
+  stat: { flex: 1 },
   statLabel: { opacity: 0.6, fontWeight: '700', color: '#000' },
   statValue: { fontSize: 18, fontWeight: '900', color: '#000' },
+
+  progressLabel: { opacity: 0.8, fontWeight: '700', color: '#000' },
+  barOuter: { height: 12, borderRadius: 999, backgroundColor: '#eee', overflow: 'hidden' },
+  barInner: { height: '100%', backgroundColor: '#111' },
 
   h1: { fontSize: 24, fontWeight: '800', color: '#000' },
   small: { opacity: 0.6, marginBottom: 6, color: '#000' },
