@@ -4,9 +4,7 @@
     "slug": "vibeproof",
     "version": "1.0.0",
     "orientation": "portrait",
-
     "icon": "./assets/vpicon.png",
-
     "scheme": "vibeproof",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -17,7 +15,6 @@
 
     "android": {
       "package": "com.dosukasol.vibeproof",
-
       "adaptiveIcon": {
         "foregroundImage": "./assets/vpicon.png",
         "backgroundColor": "#ffffff"
