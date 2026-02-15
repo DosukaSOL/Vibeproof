@@ -1,66 +1,92 @@
 <p align="center">
-  <img src="assets/logo.png" alt="VibeProof logo" width="180" />
+  <img src="assets/githubvplogo.png" width="200" alt="VibeProof Logo" />
 </p>
 
 <h1 align="center">VibeProof</h1>
-<p align="center"><b>On-chain proof of consistency.</b><br/>Turn daily actions into XP, streaks, rank, and reputation.</p>
 
 <p align="center">
-  <a href="#what-is-vibeproof">What is VibeProof</a> •
-  <a href="#how-it-works">How it Works</a> •
-  <a href="#features">Features</a> •
-  <a href="#tech-stack">Tech Stack</a> •
-  <a href="#local-development">Local Development</a> •
-  <a href="#security--rls">Security & RLS</a> •
-  <a href="#roadmap">Roadmap</a>
+  Proof-of-action. On-chain energy. Gamified growth.
 </p>
 
 ---
 
-## What is VibeProof
+## 🚀 What is VibeProof?
 
-**VibeProof** is a lightweight mobile app that turns daily missions into a measurable identity layer:
-- **XP** for completing missions  
-- **Streaks** for consistency  
-- **Rank** based on XP (leaderboard)  
-- A profile that reflects your progress over time
+VibeProof is a gamified action-verification platform that rewards users for completing real tasks and missions.
 
-The goal: make consistency *visible* and *verifiable*.
+Users:
+- Connect their wallet
+- Complete quests
+- Earn XP
+- Build streaks
+- Level up
 
----
-
-## How it Works
-
-1. **Connect wallet** (local session)
-2. App loads your **profile + stats** from Supabase
-3. You complete missions → recorded as **quest completions**
-4. XP/streaks update → leaderboard recalculates rank
+All powered by Supabase + Expo + Web3 wallet authentication.
 
 ---
 
-## Features
+## 🧠 Core Philosophy
 
-- ✅ Wallet identity + username
-- ✅ XP / level progression
-- ✅ Daily streak logic + check-in tracking
-- ✅ Missions (quests) list
-- ✅ Completion tracking (prevents double completes)
-- ✅ Leaderboard: Top 50 by XP
-- ✅ Row Level Security (RLS) policies enabled
+VibeProof turns **attention into action**.
 
----
+Instead of endless scrolling, users complete meaningful missions.
+Each completed quest strengthens their profile and reputation.
 
-## Tech Stack
-
-- **Expo / React Native**
-- **TypeScript**
-- **Supabase** (Postgres + RLS)
-- **File-based routing** (`app/`)
+No noise.
+Just proof.
 
 ---
 
-## Local Development
+## 🛠 Tech Stack
 
-### 1) Install
-```bash
-npm install
+- Expo (React Native)
+- Supabase (Postgres + RLS + RPC logic)
+- Wallet-based authentication
+- Secure environment configuration
+- EAS builds for native binaries
+
+---
+
+## 🔐 Security
+
+- Row Level Security (RLS) enabled
+- Environment variables secured via `.env`
+- No secret keys committed
+- Public repo safe for viewing
+
+---
+
+## 🧩 Architecture
+
+The database handles:
+- Quest completion validation
+- Duplicate prevention
+- XP rewards
+- Streak updates
+- Global quest caps
+
+---
+
+🐣 Mascot
+
+Meet Vibey — the face of VibeProof.
+
+Minimal.
+Focused.
+Unbreakable.
+
+⸻
+
+🧭 Roadmap
+	•	Leaderboards
+	•	Social reputation system
+	•	On-chain verification layer
+	•	Tokenized reward mechanics
+	•	Public quest marketplace
+
+⸻
+
+👤 Author
+
+Built by DosukaSOL
+
