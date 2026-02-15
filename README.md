@@ -1,50 +1,66 @@
-# Welcome to your Expo app 👋
+<p align="center">
+  <img src="assets/logo.png" alt="VibeProof logo" width="180" />
+</p>
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+<h1 align="center">VibeProof</h1>
+<p align="center"><b>On-chain proof of consistency.</b><br/>Turn daily actions into XP, streaks, rank, and reputation.</p>
 
-## Get started
+<p align="center">
+  <a href="#what-is-vibeproof">What is VibeProof</a> •
+  <a href="#how-it-works">How it Works</a> •
+  <a href="#features">Features</a> •
+  <a href="#tech-stack">Tech Stack</a> •
+  <a href="#local-development">Local Development</a> •
+  <a href="#security--rls">Security & RLS</a> •
+  <a href="#roadmap">Roadmap</a>
+</p>
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## What is VibeProof
 
-2. Start the app
+**VibeProof** is a lightweight mobile app that turns daily missions into a measurable identity layer:
+- **XP** for completing missions  
+- **Streaks** for consistency  
+- **Rank** based on XP (leaderboard)  
+- A profile that reflects your progress over time
 
-   ```bash
-   npx expo start
-   ```
+The goal: make consistency *visible* and *verifiable*.
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## How it Works
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+1. **Connect wallet** (local session)
+2. App loads your **profile + stats** from Supabase
+3. You complete missions → recorded as **quest completions**
+4. XP/streaks update → leaderboard recalculates rank
 
-## Get a fresh project
+---
 
-When you're ready, run:
+## Features
 
+- ✅ Wallet identity + username
+- ✅ XP / level progression
+- ✅ Daily streak logic + check-in tracking
+- ✅ Missions (quests) list
+- ✅ Completion tracking (prevents double completes)
+- ✅ Leaderboard: Top 50 by XP
+- ✅ Row Level Security (RLS) policies enabled
+
+---
+
+## Tech Stack
+
+- **Expo / React Native**
+- **TypeScript**
+- **Supabase** (Postgres + RLS)
+- **File-based routing** (`app/`)
+
+---
+
+## Local Development
+
+### 1) Install
 ```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+npm install
