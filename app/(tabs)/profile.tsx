@@ -1,33 +1,46 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, Alert, RefreshControl, ScrollView, Pressable } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, Alert, RefreshControl, ScrollView } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../../lib/session';
 
-const LEVEL_XP = 1000;
-
-function ProgressBar({ progress }: { progress: number }) {
-  const pct = Math.max(0, Math.min(1, progress));
-  return (
-    <View style={styles.barOuter}>
-      <View style={[styles.barInner, { width: `${Math.round(pct * 100)}%` }]} />
-    </View>
-  );
+function shortWallet(w: string) {
+  if (!w) return '';
+  return w.length <= 10 ? w : `${w.slice(0, 4)}…${w.slice(-4)}`;
 }
 
-export default function ProfileTab() {
-  const { wallet, setWallet } = useSession();
-  const [user, setUser] = useState<any>(null);
+export default function Profile() {
+  const { wallet, setSession } = useSession();
+
   const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState('');
+  const [savedUsername, setSavedUsername] = useState('');
+  const [stats, setStats] = useState<{ xp: number; level: number; streak: number } | null>(null);
+
+  const w = useMemo(() => wallet ?? '', [wallet]);
 
   const load = async () => {
-    if (!wallet) return;
+    if (!w) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase.from('users').select('*').eq('wallet', wallet).single();
+      const { data, error } = await supabase
+        .from('users')
+        .select('username,xp,level,streak')
+        .eq('wallet', w)
+        .single();
+
       if (error) throw error;
-      setUser(data);
+
+      const u = (data?.username ?? '').toString();
+      setUsername(u);
+      setSavedUsername(u);
+
+      setStats({
+        xp: Number(data?.xp ?? 0),
+        level: Number(data?.level ?? 1),
+        streak: Number(data?.streak ?? 0),
+      });
     } catch (e: any) {
-      Alert.alert('Error', e.message ?? 'Failed to load profile');
+      console.log('Profile load error:', e?.message ?? e);
     } finally {
       setLoading(false);
     }
@@ -35,81 +48,155 @@ export default function ProfileTab() {
 
   useEffect(() => {
     load();
-  }, [wallet]);
+  }, [w]);
 
-  const logout = async () => {
-    await setWallet(null);
-    setUser(null);
+  const saveUsername = async () => {
+    if (!w) {
+      Alert.alert('Not connected', 'Connect a wallet first on Missions.');
+      return;
+    }
+
+    const clean = username.trim().slice(0, 20);
+
+    // simple rule: letters/numbers/_ only (so it looks clean on leaderboard)
+    if (clean && !/^[a-zA-Z0-9_]+$/.test(clean)) {
+      Alert.alert('Invalid username', 'Use only letters, numbers, and underscore (_).');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('users').update({ username: clean || null }).eq('wallet', w);
+      if (error) throw error;
+
+      setSavedUsername(clean);
+      setUsername(clean);
+
+      Alert.alert('Saved', clean ? `Username set to ${clean}` : 'Username cleared');
+    } catch (e: any) {
+      Alert.alert('Save failed', e?.message ?? 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const xp = Number(user?.xp ?? 0);
-  const level = Number(user?.level ?? 1);
-  const streak = Number(user?.streak ?? 0);
-  const xpIntoLevel = xp % LEVEL_XP;
-  const xpToNext = LEVEL_XP - xpIntoLevel;
-  const progress = xpIntoLevel / LEVEL_XP;
+  const disconnect = async () => {
+    await setSession({ wallet: null, authToken: null });
+    Alert.alert('Disconnected', 'Wallet session cleared on this device.');
+  };
+
+  const changed = username.trim().slice(0, 20) !== (savedUsername ?? '');
 
   return (
     <ScrollView
-      contentContainerStyle={styles.container}
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: 30 }}
       refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
     >
-      <Text style={styles.h1}>Your Vibe</Text>
+      <Text style={styles.title}>Profile</Text>
+      <Text style={styles.sub}>Identity + stats</Text>
 
-      {!wallet ? (
-        <Text style={styles.empty}>Go to Missions and enter a wallet first.</Text>
-      ) : (
-        <View style={styles.card}>
-          <Text style={styles.label}>Wallet</Text>
-          <Text style={styles.mono}>{wallet}</Text>
+      <View style={styles.card}>
+        <Text style={styles.label}>Wallet</Text>
+        <Text style={styles.value}>{w ? shortWallet(w) : 'Not connected'}</Text>
 
-          <View style={styles.row}>
-            <View style={styles.stat}>
-              <Text style={styles.big}>{level}</Text>
-              <Text style={styles.small}>Level</Text>
-            </View>
-            <View style={styles.stat}>
-              <Text style={styles.big}>{xp}</Text>
-              <Text style={styles.small}>XP</Text>
-            </View>
-            <View style={styles.stat}>
-              <Text style={styles.big}>{streak}</Text>
-              <Text style={styles.small}>Streak</Text>
-            </View>
+        <View style={{ height: 14 }} />
+
+        <Text style={styles.label}>Username</Text>
+        <TextInput
+          value={username}
+          onChangeText={setUsername}
+          placeholder="e.g. DosukaSOL"
+          placeholderTextColor="#777"
+          style={styles.input}
+          autoCapitalize="none"
+          autoCorrect={false}
+          editable={!!w}
+        />
+        <Text style={styles.hint}>Allowed: letters, numbers, underscore. Max 20 chars.</Text>
+
+        <Pressable style={[styles.btn, !w && styles.btnDisabled]} onPress={saveUsername} disabled={!w}>
+          <Text style={styles.btnText}>{changed ? 'Save username' : 'Saved'}</Text>
+        </Pressable>
+
+        <Pressable style={[styles.linkBtn, !w && styles.btnDisabled]} onPress={disconnect} disabled={!w}>
+          <Text style={styles.linkText}>Disconnect wallet</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Stats</Text>
+
+        <View style={styles.statsRow}>
+          <View style={styles.stat}>
+            <Text style={styles.statLabel}>Level</Text>
+            <Text style={styles.statValue}>{stats?.level ?? '-'}</Text>
           </View>
-
-          <Text style={styles.progressLabel}>
-            {xpIntoLevel}/{LEVEL_XP} XP • {xpToNext} to next level
-          </Text>
-          <ProgressBar progress={progress} />
-
-          <Pressable style={styles.btn} onPress={logout}>
-            <Text style={styles.btnText}>Change wallet</Text>
-          </Pressable>
+          <View style={styles.stat}>
+            <Text style={styles.statLabel}>XP</Text>
+            <Text style={styles.statValue}>{stats?.xp ?? '-'}</Text>
+          </View>
+          <View style={styles.stat}>
+            <Text style={styles.statLabel}>Streak</Text>
+            <Text style={styles.statValue}>
+              {stats ? `${stats.streak}🔥` : '-'}
+            </Text>
+          </View>
         </View>
-      )}
+
+        <Text style={styles.hint}>
+          Pull down to refresh. Later we’ll add achievements + “rank”.
+        </Text>
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: '#fff', minHeight: '100%' },
-  h1: { fontSize: 26, fontWeight: '800', marginBottom: 12, color: '#000' },
-  empty: { opacity: 0.6, color: '#000' },
+  container: { flex: 1, backgroundColor: '#fff', padding: 16 },
+  title: { fontSize: 28, fontWeight: '800', color: '#000' },
+  sub: { marginTop: 4, opacity: 0.7, color: '#000' },
 
-  card: { borderWidth: 1, borderColor: '#eee', borderRadius: 14, padding: 16, gap: 10 },
-  label: { opacity: 0.6, fontWeight: '700', color: '#000' },
-  mono: { fontFamily: 'Menlo', fontSize: 12, color: '#000' },
+  card: {
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: '#eee',
+    borderRadius: 16,
+    padding: 14,
+    backgroundColor: '#fff',
+    gap: 6,
+  },
+  cardTitle: { fontSize: 18, fontWeight: '800', color: '#000' },
 
-  row: { flexDirection: 'row', gap: 10, marginTop: 8 },
-  stat: { flex: 1, borderWidth: 1, borderColor: '#eee', borderRadius: 14, padding: 12, alignItems: 'center' },
-  big: { fontSize: 20, fontWeight: '900', color: '#000' },
-  small: { opacity: 0.6, fontWeight: '700', color: '#000', marginTop: 4 },
+  label: { fontWeight: '800', opacity: 0.7, color: '#000' },
+  value: { color: '#000', fontSize: 16 },
 
-  progressLabel: { opacity: 0.8, fontWeight: '700', color: '#000', marginTop: 6 },
-  barOuter: { height: 12, borderRadius: 999, backgroundColor: '#eee', overflow: 'hidden' },
-  barInner: { height: '100%', backgroundColor: '#111' },
+  input: {
+    borderWidth: 1,
+    borderColor: '#eee',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: '#000',
+    backgroundColor: '#fff',
+  },
+  hint: { marginTop: 6, opacity: 0.7, color: '#000' },
 
-  btn: { padding: 14, borderRadius: 12, alignItems: 'center', backgroundColor: '#111', marginTop: 10 },
+  btn: {
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: '#111',
+  },
+  btnDisabled: { opacity: 0.4 },
   btnText: { color: 'white', fontWeight: '800' },
+
+  linkBtn: { marginTop: 10, alignItems: 'center', padding: 6 },
+  linkText: { color: '#000', fontWeight: '800', opacity: 0.7 },
+
+  statsRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  stat: { flex: 1, borderWidth: 1, borderColor: '#eee', borderRadius: 12, padding: 12 },
+  statLabel: { opacity: 0.7, fontWeight: '800', color: '#000' },
+  statValue: { marginTop: 6, fontSize: 18, fontWeight: '900', color: '#000' },
 });
