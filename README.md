@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/githubvplogo.png" width="200" alt="VibeProof Logo" />
+  <img src="https://raw.githubusercontent.com/DosukaSOL/Vibeproof/main/assets/githubvplogo.png" width="200" />
 </p>
 
 <h1 align="center">VibeProof</h1>
