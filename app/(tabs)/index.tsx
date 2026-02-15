@@ -114,24 +114,6 @@ const completeQuest = async (quest: Quest) => {
   }
 
   try {
-// Enforce max_completions (global cap)
-if (quest.max_completions && Number(quest.max_completions) > 0) {
-  const { data: stat, error: statErr } = await supabase
-    .from('quest_stats')
-    .select('completion_count')
-    .eq('quest_id', quest.id)
-    .maybeSingle();
-
-  // If no row exists yet, that's fine (treat as 0)
-  if (statErr) throw statErr;
-
-  const currentCount = Number(stat?.completion_count ?? 0);
-
-  if (currentCount >= Number(quest.max_completions)) {
-    Alert.alert('Quest ended', 'This sponsored quest hit its max completions.');
-    return;
-  }
-}
     // 1) Insert completion row (prevents double-completing)
     const { error: insErr } = await supabase.from('quest_completions').insert({
       wallet,
