@@ -1,5 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, Alert, RefreshControl, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  StyleSheet,
+  Alert,
+  RefreshControl,
+  ScrollView,
+} from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../../lib/session';
 
@@ -12,16 +21,22 @@ export default function Profile() {
   const { wallet, setSession } = useSession();
 
   const [loading, setLoading] = useState(false);
+
   const [username, setUsername] = useState('');
   const [savedUsername, setSavedUsername] = useState('');
+
   const [stats, setStats] = useState<{ xp: number; level: number; streak: number } | null>(null);
+  const [rank, setRank] = useState<number | null>(null);
 
   const w = useMemo(() => wallet ?? '', [wallet]);
+  const changed = username !== savedUsername;
 
   const load = async () => {
     if (!w) return;
     setLoading(true);
+
     try {
+      // 1) Fetch user row
       const { data, error } = await supabase
         .from('users')
         .select('username,xp,level,streak')
@@ -34,46 +49,49 @@ export default function Profile() {
       setUsername(u);
       setSavedUsername(u);
 
+      const myXp = Number(data?.xp ?? 0);
       setStats({
-        xp: Number(data?.xp ?? 0),
+        xp: myXp,
         level: Number(data?.level ?? 1),
         streak: Number(data?.streak ?? 0),
       });
+
+      // 2) Rank = how many users have more XP than you + 1
+      const { count, error: rankErr } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .gt('xp', myXp);
+
+      if (rankErr) throw rankErr;
+
+      setRank((count ?? 0) + 1);
     } catch (e: any) {
       console.log('Profile load error:', e?.message ?? e);
+      Alert.alert('Profile error', e?.message ?? 'Unknown error');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    load();
-  }, [w]);
-
   const saveUsername = async () => {
-    if (!w) {
-      Alert.alert('Not connected', 'Connect a wallet first on Missions.');
-      return;
-    }
+    if (!w) return;
+    const trimmed = username.trim();
 
-    const clean = username.trim().slice(0, 20);
-
-    // simple rule: letters/numbers/_ only (so it looks clean on leaderboard)
-    if (clean && !/^[a-zA-Z0-9_]+$/.test(clean)) {
-      Alert.alert('Invalid username', 'Use only letters, numbers, and underscore (_).');
+    // simple validation: letters, numbers, underscore; 1-20 chars
+    if (!/^[a-zA-Z0-9_]{1,20}$/.test(trimmed)) {
+      Alert.alert('Invalid username', 'Use letters, numbers, underscore. Max 20 chars.');
       return;
     }
 
     setLoading(true);
     try {
-      const { error } = await supabase.from('users').update({ username: clean || null }).eq('wallet', w);
+      const { error } = await supabase.from('users').update({ username: trimmed }).eq('wallet', w);
       if (error) throw error;
 
-      setSavedUsername(clean);
-      setUsername(clean);
-
-      Alert.alert('Saved', clean ? `Username set to ${clean}` : 'Username cleared');
+      setSavedUsername(trimmed);
+      Alert.alert('Saved', 'Username updated.');
     } catch (e: any) {
+      console.log('Save username error:', e?.message ?? e);
       Alert.alert('Save failed', e?.message ?? 'Unknown error');
     } finally {
       setLoading(false);
@@ -82,10 +100,12 @@ export default function Profile() {
 
   const disconnect = async () => {
     await setSession({ wallet: null, authToken: null });
-    Alert.alert('Disconnected', 'Wallet session cleared on this device.');
   };
 
-  const changed = username.trim().slice(0, 20) !== (savedUsername ?? '');
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [w]);
 
   return (
     <ScrollView
@@ -115,7 +135,11 @@ export default function Profile() {
         />
         <Text style={styles.hint}>Allowed: letters, numbers, underscore. Max 20 chars.</Text>
 
-        <Pressable style={[styles.btn, !w && styles.btnDisabled]} onPress={saveUsername} disabled={!w}>
+        <Pressable
+          style={[styles.btn, (!w || !changed || loading) && styles.btnDisabled]}
+          onPress={saveUsername}
+          disabled={!w || !changed || loading}
+        >
           <Text style={styles.btnText}>{changed ? 'Save username' : 'Saved'}</Text>
         </Pressable>
 
@@ -130,22 +154,29 @@ export default function Profile() {
         <View style={styles.statsRow}>
           <View style={styles.stat}>
             <Text style={styles.statLabel}>Level</Text>
-            <Text style={styles.statValue}>{stats?.level ?? '-'}</Text>
+            <Text style={styles.statValue}>{stats ? String(stats.level) : '-'}</Text>
           </View>
+
           <View style={styles.stat}>
             <Text style={styles.statLabel}>XP</Text>
-            <Text style={styles.statValue}>{stats?.xp ?? '-'}</Text>
+            <Text style={styles.statValue}>{stats ? String(stats.xp) : '-'}</Text>
           </View>
+
           <View style={styles.stat}>
             <Text style={styles.statLabel}>Streak</Text>
-            <Text style={styles.statValue}>
-              {stats ? `${stats.streak}🔥` : '-'}
-            </Text>
+            <Text style={styles.statValue}>{stats ? `${stats.streak}🔥` : '-'}</Text>
+          </View>
+        </View>
+
+        <View style={styles.statsRow}>
+          <View style={styles.stat}>
+            <Text style={styles.statLabel}>Rank</Text>
+            <Text style={styles.statValue}>{rank ?? '-'}</Text>
           </View>
         </View>
 
         <Text style={styles.hint}>
-          Pull down to refresh. Later we’ll add achievements + “rank”.
+          Pull down to refresh. Rank is based on XP (higher XP = better rank).
         </Text>
       </View>
     </ScrollView>
@@ -153,50 +184,59 @@ export default function Profile() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 16 },
-  title: { fontSize: 28, fontWeight: '800', color: '#000' },
-  sub: { marginTop: 4, opacity: 0.7, color: '#000' },
+  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
+  title: { fontSize: 34, fontWeight: '800', color: '#000' },
+  sub: { fontSize: 14, opacity: 0.7, color: '#000', marginBottom: 12 },
 
   card: {
-    marginTop: 14,
     borderWidth: 1,
     borderColor: '#eee',
     borderRadius: 16,
     padding: 14,
+    marginTop: 12,
+    gap: 10,
     backgroundColor: '#fff',
-    gap: 6,
   },
-  cardTitle: { fontSize: 18, fontWeight: '800', color: '#000' },
 
-  label: { fontWeight: '800', opacity: 0.7, color: '#000' },
-  value: { color: '#000', fontSize: 16 },
+  label: { fontSize: 12, opacity: 0.7, color: '#000' },
+  value: { fontSize: 16, fontWeight: '700', color: '#000' },
 
   input: {
     borderWidth: 1,
     borderColor: '#eee',
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     color: '#000',
-    backgroundColor: '#fff',
+    fontSize: 16,
   },
-  hint: { marginTop: 6, opacity: 0.7, color: '#000' },
+
+  hint: { fontSize: 12, opacity: 0.7, color: '#000' },
 
   btn: {
-    marginTop: 10,
-    padding: 12,
-    borderRadius: 12,
+    padding: 14,
+    borderRadius: 10,
     alignItems: 'center',
     backgroundColor: '#111',
+    marginVertical: 8,
   },
   btnDisabled: { opacity: 0.4 },
-  btnText: { color: 'white', fontWeight: '800' },
+  btnText: { color: 'white', fontWeight: '700' },
 
-  linkBtn: { marginTop: 10, alignItems: 'center', padding: 6 },
-  linkText: { color: '#000', fontWeight: '800', opacity: 0.7 },
+  linkBtn: { alignItems: 'center', paddingVertical: 6 },
+  linkText: { color: '#000', fontWeight: '700' },
 
-  statsRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
-  stat: { flex: 1, borderWidth: 1, borderColor: '#eee', borderRadius: 12, padding: 12 },
-  statLabel: { opacity: 0.7, fontWeight: '800', color: '#000' },
-  statValue: { marginTop: 6, fontSize: 18, fontWeight: '900', color: '#000' },
+  cardTitle: { fontSize: 18, fontWeight: '800', color: '#000' },
+
+  statsRow: { flexDirection: 'row', gap: 10 },
+  stat: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#eee',
+    borderRadius: 14,
+    padding: 12,
+    gap: 6,
+  },
+  statLabel: { fontSize: 12, opacity: 0.7, color: '#000' },
+  statValue: { fontSize: 18, fontWeight: '800', color: '#000' },
 });
