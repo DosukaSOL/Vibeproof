@@ -1,13 +1,14 @@
 // app/(tabs)/_layout.tsx
+import { T } from "@/lib/theme";
 import { Tabs } from "expo-router";
 import React from "react";
-import { Image, Text, View } from "react-native";
+import { Image, Platform, Text, View } from "react-native";
 
 const CenteredLogo = () => (
-  <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+  <View style={{ alignItems: "center", justifyContent: "center" }}>
     <Image
-      source={require('@/assets/vpicon.png')}
-      style={{ width: 52, height: 52, resizeMode: 'contain', borderRadius: 10 }}
+      source={require("@/assets/vpicon.png")}
+      style={{ width: 48, height: 48, resizeMode: "contain", borderRadius: 10 }}
     />
   </View>
 );
@@ -19,16 +20,29 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: true,
         headerTitle: () => <CenteredLogo />,
-        headerTitleAlign: 'center',
+        headerTitleAlign: "center",
         headerLeft: () => null,
         headerRight: () => null,
-        headerStyle: { backgroundColor: '#000' },
-        headerTintColor: '#00FF00',
-        tabBarActiveTintColor: '#00FF00',
-        tabBarInactiveTintColor: '#888',
+        headerStyle: {
+          backgroundColor: T.bg,
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: T.borderLight,
+        },
+        tabBarActiveTintColor: T.accent,
+        tabBarInactiveTintColor: T.textMuted,
         tabBarStyle: {
-          backgroundColor: '#000',
-          borderTopColor: '#222',
+          backgroundColor: T.bg,
+          borderTopColor: T.borderLight,
+          borderTopWidth: 1,
+          height: Platform.OS === "android" ? 60 : 84,
+          paddingBottom: Platform.OS === "android" ? 8 : 28,
+          paddingTop: 6,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
         },
       }}
     >

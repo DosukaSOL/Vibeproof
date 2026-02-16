@@ -7,6 +7,7 @@ import { SuccessPopView } from "@/components/SuccessPopView";
 import { useWallet } from "@/hooks/useWallet";
 import { SPRING } from "@/lib/animations";
 import { hapticConnectSuccess, hapticDisconnect, hapticError } from "@/lib/haptics";
+import { T } from "@/lib/theme";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import Animated, {
@@ -43,7 +44,7 @@ export function WalletButton({
   }, [justConnected]);
 
   const glowStyle = useAnimatedStyle(() => ({
-    borderColor: `rgba(0, 255, 0, ${glowOpacity.value * 0.6})`,
+    borderColor: `rgba(63, 185, 80, ${glowOpacity.value * 0.7})`,
     borderWidth: glowOpacity.value > 0.01 ? 2 : 1,
   }));
 
@@ -73,7 +74,7 @@ export function WalletButton({
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="small" color="#666" />
+        <ActivityIndicator size="small" color={T.textSec} />
         <Text style={styles.loadingText}>Checking wallet...</Text>
       </View>
     );
@@ -116,44 +117,44 @@ const styles = {
   button: {
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 20,
+    borderRadius: T.rXL,
     alignItems: "center" as const,
   },
   connectButton: {
-    backgroundColor: "#00FF00",
+    backgroundColor: T.accent,
   },
   disconnectButton: {
-    backgroundColor: "#EF4444",
+    backgroundColor: T.error,
   },
   buttonText: {
-    color: "white",
+    color: "#fff",
     fontWeight: "700" as const,
     fontSize: 16,
   },
   connectedInfo: {
-    backgroundColor: "#F3F4F6",
-    borderRadius: 12,
+    backgroundColor: T.surface,
+    borderRadius: T.r,
     padding: 12,
     gap: 4,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: T.border,
   },
   label: {
     fontSize: 12,
-    color: "#666",
+    color: T.textSec,
     fontWeight: "600" as const,
   },
   address: {
     fontSize: 14,
-    color: "#000",
+    color: T.text,
     fontWeight: "700" as const,
   },
   loadingText: {
     fontSize: 14,
-    color: "#666",
+    color: T.textSec,
   },
   error: {
     fontSize: 12,
-    color: "#EF4444",
+    color: T.error,
   },
 };

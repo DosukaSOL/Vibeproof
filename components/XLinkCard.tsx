@@ -5,6 +5,7 @@
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { UseXLinkReturn } from "@/hooks/useXLink";
 import { hapticError, hapticSuccess, hapticWarning } from "@/lib/haptics";
+import { T } from "@/lib/theme";
 import React from "react";
 import { ActivityIndicator, Alert, Text, View } from "react-native";
 
@@ -108,10 +109,10 @@ export function XLinkCard({ xLink }: XLinkCardProps) {
 
 const styles = {
   card: {
-    backgroundColor: "white",
-    borderRadius: 12,
+    backgroundColor: T.surface,
+    borderRadius: T.r,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: T.border,
     padding: 14,
     gap: 10,
   },
@@ -123,16 +124,16 @@ const styles = {
   icon: {
     fontSize: 20,
     fontWeight: "700" as const,
-    color: "#000",
+    color: T.text,
   },
   cardTitle: {
     fontSize: 16,
     fontWeight: "700" as const,
-    color: "#000",
+    color: T.text,
   },
   errorText: {
     fontSize: 12,
-    color: "#EF4444",
+    color: T.error,
   },
   linkedContainer: {
     flexDirection: "row" as const,
@@ -145,26 +146,26 @@ const styles = {
   },
   linkedLabel: {
     fontSize: 12,
-    color: "#666",
+    color: T.textSec,
   },
   linkedUsername: {
     fontSize: 15,
     fontWeight: "700" as const,
-    color: "#000",
+    color: T.text,
   },
   linkedDate: {
     fontSize: 11,
-    color: "#999",
+    color: T.textMuted,
   },
   unlinkButton: {
     borderWidth: 1,
-    borderColor: "#EF4444",
-    borderRadius: 16,
+    borderColor: T.error,
+    borderRadius: T.rL,
     paddingHorizontal: 14,
     paddingVertical: 7,
   },
   unlinkText: {
-    color: "#EF4444",
+    color: T.error,
     fontSize: 13,
     fontWeight: "600" as const,
   },
@@ -173,17 +174,17 @@ const styles = {
   },
   description: {
     fontSize: 13,
-    color: "#666",
+    color: T.textSec,
     lineHeight: 18,
   },
   linkButton: {
-    backgroundColor: "#000",
+    backgroundColor: T.text,
     paddingVertical: 11,
-    borderRadius: 20,
+    borderRadius: T.rXL,
     alignItems: "center" as const,
   },
   linkButtonText: {
-    color: "white",
+    color: T.bg,
     fontWeight: "700" as const,
     fontSize: 14,
   },

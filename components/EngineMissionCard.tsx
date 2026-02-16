@@ -6,6 +6,7 @@ import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { SPRING } from "@/lib/animations";
 import { hapticError, hapticXpGained } from "@/lib/haptics";
 import { MissionTemplate } from "@/lib/missionTemplates";
+import { T } from "@/lib/theme";
 import React, { useState } from "react";
 import {
     ActivityIndicator,
@@ -184,7 +185,7 @@ export function EngineMissionCard({
                       value={proof}
                       onChangeText={setProof}
                       style={styles.proofInput}
-                      placeholderTextColor="#999"
+                      placeholderTextColor={T.textMuted}
                     />
                     <AnimatedPressable
                       onPress={handleManualSubmit}
@@ -210,15 +211,15 @@ export function EngineMissionCard({
 const styles = {
   card: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
+    borderColor: T.border,
+    borderRadius: T.r,
     padding: 12,
-    backgroundColor: "white",
+    backgroundColor: T.surface,
     gap: 10,
   },
   completedCard: {
-    backgroundColor: "#F0FDF4",
-    borderColor: "#86EFAC",
+    backgroundColor: T.successBg,
+    borderColor: T.accentDim,
   },
   header: {
     flexDirection: "row" as const,
@@ -235,7 +236,7 @@ const styles = {
   title: {
     fontSize: 15,
     fontWeight: "700" as const,
-    color: "#000",
+    color: T.text,
   },
   statusBadge: {
     fontSize: 12,
@@ -243,9 +244,9 @@ const styles = {
   },
   oneTimeBadge: {
     fontSize: 11,
-    color: "#8B5CF6",
+    color: T.purple,
     fontWeight: "600" as const,
-    backgroundColor: "#F3E8FF",
+    backgroundColor: T.purpleBg,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -254,7 +255,7 @@ const styles = {
   },
   description: {
     fontSize: 13,
-    color: "#666",
+    color: T.textSec,
     lineHeight: 18,
   },
   footer: {
@@ -266,18 +267,18 @@ const styles = {
   xpReward: {
     fontSize: 13,
     fontWeight: "700" as const,
-    color: "#00FF00",
+    color: T.xp,
   },
   verifyButton: {
-    backgroundColor: "#00FF00",
+    backgroundColor: T.accent,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 16,
+    borderRadius: T.rL,
     minWidth: 70,
     alignItems: "center" as const,
   },
   verifyButtonText: {
-    color: "white",
+    color: "#fff",
     fontSize: 13,
     fontWeight: "700" as const,
   },
@@ -293,23 +294,24 @@ const styles = {
   proofInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 8,
+    borderColor: T.border,
+    borderRadius: T.rS,
     paddingHorizontal: 10,
     paddingVertical: 8,
     fontSize: 13,
-    color: "#000",
+    color: T.text,
+    backgroundColor: T.surface2,
   },
   submitButton: {
-    backgroundColor: "#00FF00",
+    backgroundColor: T.accent,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 16,
+    borderRadius: T.rL,
     minWidth: 60,
     alignItems: "center" as const,
   },
   submitButtonText: {
-    color: "white",
+    color: "#fff",
     fontSize: 13,
     fontWeight: "700" as const,
   },

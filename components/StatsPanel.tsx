@@ -3,6 +3,7 @@
  * Display user stats and progression
  */
 import { LocalUser } from "@/lib/localStore";
+import { T } from "@/lib/theme";
 import React from "react";
 import { Text, View } from "react-native";
 
@@ -59,15 +60,17 @@ function StatItem({ label, value, icon }: StatItemProps) {
 
 const styles = {
   container: {
-    backgroundColor: "#F8F9FA",
-    borderRadius: 14,
+    backgroundColor: T.surface,
+    borderRadius: T.rL,
     padding: 14,
     gap: 12,
+    borderWidth: 1,
+    borderColor: T.border,
   },
   title: {
     fontSize: 16,
     fontWeight: "700" as const,
-    color: "#000",
+    color: T.text,
   },
   gridContainer: {
     flexDirection: "row" as const,
@@ -78,13 +81,13 @@ const styles = {
   statItem: {
     flex: 1,
     minWidth: "45%" as any,
-    backgroundColor: "white",
-    borderRadius: 10,
+    backgroundColor: T.surface2,
+    borderRadius: T.r,
     padding: 12,
     alignItems: "center" as const,
     gap: 6,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: T.borderLight,
   },
   statIcon: {
     fontSize: 24,
@@ -92,16 +95,16 @@ const styles = {
   statValue: {
     fontSize: 18,
     fontWeight: "700" as const,
-    color: "#000",
+    color: T.xp,
   },
   statLabel: {
     fontSize: 12,
-    color: "#666",
+    color: T.textSec,
     fontWeight: "600" as const,
   },
   emptyText: {
     fontSize: 14,
-    color: "#999",
+    color: T.textMuted,
     textAlign: "center" as const,
   },
 };

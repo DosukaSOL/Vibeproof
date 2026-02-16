@@ -1,6 +1,6 @@
 import { Audio } from "expo-av";
-import { router } from "expo-router";
-import React, { useEffect, useRef } from "react";
+import { Redirect } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
 import { Dimensions, Image, StyleSheet, Text, View } from "react-native";
 import Animated, {
     Easing,
@@ -15,6 +15,8 @@ import Animated, {
 const { width } = Dimensions.get("window");
 
 export default function SplashScreen() {
+  const [done, setDone] = useState(false);
+
   const logoScale = useSharedValue(0);
   const logoRotate = useSharedValue(0);
   const logoOpacity = useSharedValue(0);
@@ -25,7 +27,7 @@ export default function SplashScreen() {
   const soundRef = useRef<Audio.Sound | null>(null);
 
   useEffect(() => {
-    // Play chime sound
+    // Play chime
     (async () => {
       try {
         const { sound } = await Audio.Sound.createAsync(
@@ -34,32 +36,25 @@ export default function SplashScreen() {
         );
         soundRef.current = sound;
       } catch (e) {
-        console.warn("[Splash] Audio error:", e);
+        console.warn("[Splash] Audio:", e);
       }
     })();
 
-    // 1. Logo fades in + bouncy scale from 0 → 1
+    // Animations
     logoOpacity.value = withTiming(1, { duration: 400 });
-    logoScale.value = withSpring(1, {
-      damping: 8,
-      stiffness: 100,
-      mass: 0.8,
-    });
+    logoScale.value = withSpring(1, { damping: 8, stiffness: 100, mass: 0.8 });
 
-    // 2. Logo does a smooth spin (360°)
     logoRotate.value = withDelay(
       200,
       withTiming(360, { duration: 800, easing: Easing.out(Easing.cubic) })
     );
 
-    // 3. Text slides up + fades in
     textOpacity.value = withDelay(600, withTiming(1, { duration: 400 }));
     textTranslateY.value = withDelay(
       600,
       withSpring(0, { damping: 12, stiffness: 100 })
     );
 
-    // 4. Gentle pulse on logo
     pulseScale.value = withDelay(
       1000,
       withSequence(
@@ -68,23 +63,20 @@ export default function SplashScreen() {
       )
     );
 
-    // 5. Fade out the whole screen (visual only — navigation handled by setTimeout)
-    screenOpacity.value = withDelay(
-      2000,
-      withTiming(0, { duration: 400 })
-    );
+    screenOpacity.value = withDelay(2000, withTiming(0, { duration: 400 }));
 
-    // 6. Navigate on the JS thread after animation completes
-    const navTimer = setTimeout(() => {
-      router.replace("/(tabs)/profile" as any);
-    }, 2500);
-
+    // Navigate using state → Redirect (safe, no crash)
+    const timer = setTimeout(() => setDone(true), 2500);
     return () => {
-      clearTimeout(navTimer);
-      // Unload sound
+      clearTimeout(timer);
       soundRef.current?.unloadAsync().catch(() => {});
     };
   }, []);
+
+  // Declarative navigation — bulletproof
+  if (done) {
+    return <Redirect href="/(tabs)/profile" />;
+  }
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({
     opacity: logoOpacity.value,
@@ -130,7 +122,7 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: "#0D1117",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -148,19 +140,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 36,
     fontWeight: "900",
-    color: "#00FF00",
+    color: "#3FB950",
     textAlign: "center",
     letterSpacing: 1,
   },
   subtitle: {
     fontSize: 16,
-    color: "#888",
+    color: "#8B949E",
     textAlign: "center",
     marginTop: 8,
   },
   footer: {
     fontSize: 12,
-    color: "#444",
+    color: "#484F58",
     textAlign: "center",
     marginBottom: 40,
   },
