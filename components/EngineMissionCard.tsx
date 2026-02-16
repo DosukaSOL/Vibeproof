@@ -5,7 +5,7 @@
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { SPRING } from "@/lib/animations";
 import { hapticError, hapticXpGained } from "@/lib/haptics";
-import { MissionInstance, MissionTemplate } from "@/lib/missionEngine";
+import { MissionTemplate } from "@/lib/missionTemplates";
 import React, { useState } from "react";
 import {
     ActivityIndicator,
@@ -24,7 +24,7 @@ import Animated, {
 type VerifyStatus = "idle" | "verifying" | "verified" | "failed";
 
 interface EngineMissionCardProps {
-  mission: MissionInstance | MissionTemplate;
+  mission: MissionTemplate;
   isCompleted: boolean;
   verificationStatus: VerifyStatus;
   onVerify: () => Promise<any>;
