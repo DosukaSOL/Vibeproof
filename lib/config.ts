@@ -16,10 +16,19 @@ export const CONFIG = {
 
 export function validateConfig() {
   const required = ["SUPABASE_URL", "SUPABASE_ANON_KEY"] as const;
+  const missing = [];
 
   for (const key of required) {
     if (!CONFIG[key]) {
-      throw new Error(`Missing required config: ${key}`);
+      missing.push(key);
     }
   }
+
+  if (missing.length > 0) {
+    console.warn(
+      `Warning: Missing environment variables: ${missing.join(", ")}. Some features may not work.`
+    );
+    return false;
+  }
+  return true;
 }

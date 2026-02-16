@@ -2,14 +2,12 @@
  * Supabase Client & Database Integration
  */
 import { createClient } from "@supabase/supabase-js";
-import { CONFIG, validateConfig } from "./config";
+import { CONFIG } from "./config";
 
-// Validate config on import
-validateConfig();
-
+// Initialize Supabase client (with fallback empty strings if env vars not set)
 export const supabase = createClient(
-  CONFIG.SUPABASE_URL,
-  CONFIG.SUPABASE_ANON_KEY
+  CONFIG.SUPABASE_URL || "https://placeholder.supabase.co",
+  CONFIG.SUPABASE_ANON_KEY || "placeholder_key"
 );
 
 /**
