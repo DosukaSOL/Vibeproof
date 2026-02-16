@@ -44,14 +44,19 @@ export function useXLink(walletAddress: string | null): UseXLinkReturn {
     path: "x-callback",
   });
 
+  // When X_CLIENT_ID is not set, pass a placeholder config.
+  // `request` will still be null until the async load completes,
+  // and we guard `promptAsync` calls behind the isLinked check.
+  const authConfig: AuthSession.AuthRequestConfig = {
+    clientId: CONFIG.X_CLIENT_ID || "__unused__",
+    redirectUri,
+    scopes: ["tweet.read", "users.read", "follows.read", "offline.access"],
+    usePKCE: true,
+    responseType: AuthSession.ResponseType.Code,
+  };
+
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
-    {
-      clientId: CONFIG.X_CLIENT_ID || "",
-      redirectUri,
-      scopes: ["tweet.read", "users.read", "follows.read", "offline.access"],
-      usePKCE: true,
-      responseType: AuthSession.ResponseType.Code,
-    },
+    authConfig,
     discovery
   );
 

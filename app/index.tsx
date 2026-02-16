@@ -1,48 +1,29 @@
 import { Audio } from "expo-av";
 import { Redirect } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import { Dimensions, Image, StyleSheet, Text, View } from "react-native";
-import Animated, {
+import {
+    Animated,
+    Dimensions,
     Easing,
-    useAnimatedStyle,
-    useSharedValue,
-    withDelay,
-    withSequence,
-    withSpring,
-    withTiming,
-} from "react-native-reanimated";
+    Image,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
 
 const { width } = Dimensions.get("window");
 
 export default function SplashScreen() {
   const [done, setDone] = useState(false);
-
-  const logoScale = useSharedValue(0);
-  const logoRotate = useSharedValue(0);
-  const logoOpacity = useSharedValue(0);
-  const textOpacity = useSharedValue(0);
-  const textTranslateY = useSharedValue(30);
-  const pulseScale = useSharedValue(1);
-  const screenOpacity = useSharedValue(1);
   const soundRef = useRef<Audio.Sound | null>(null);
 
-  // ALL hooks must be called unconditionally, BEFORE any early return
-  const logoAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: logoOpacity.value,
-    transform: [
-      { scale: logoScale.value * pulseScale.value },
-      { rotate: `${logoRotate.value}deg` },
-    ],
-  }));
-
-  const textAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: textOpacity.value,
-    transform: [{ translateY: textTranslateY.value }],
-  }));
-
-  const screenAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: screenOpacity.value,
-  }));
+  // Plain RN Animated values — no Reanimated, no worklets, no UI-thread issues
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const logoScale = useRef(new Animated.Value(0.3)).current;
+  const logoRotate = useRef(new Animated.Value(0)).current;
+  const textOpacity = useRef(new Animated.Value(0)).current;
+  const textTranslateY = useRef(new Animated.Value(30)).current;
+  const screenOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     // Play chime
@@ -58,32 +39,77 @@ export default function SplashScreen() {
       }
     })();
 
-    // Animations
-    logoOpacity.value = withTiming(1, { duration: 400 });
-    logoScale.value = withSpring(1, { damping: 8, stiffness: 100, mass: 0.8 });
+    // Logo fade + scale in
+    Animated.parallel([
+      Animated.timing(logoOpacity, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.spring(logoScale, {
+        toValue: 1,
+        damping: 8,
+        stiffness: 100,
+        mass: 0.8,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-    logoRotate.value = withDelay(
-      200,
-      withTiming(360, { duration: 800, easing: Easing.out(Easing.cubic) })
-    );
+    // Logo rotate (delayed)
+    setTimeout(() => {
+      Animated.timing(logoRotate, {
+        toValue: 1,
+        duration: 800,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    }, 200);
 
-    textOpacity.value = withDelay(600, withTiming(1, { duration: 400 }));
-    textTranslateY.value = withDelay(
-      600,
-      withSpring(0, { damping: 12, stiffness: 100 })
-    );
+    // Text fade + slide in (delayed)
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(textOpacity, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.spring(textTranslateY, {
+          toValue: 0,
+          damping: 12,
+          stiffness: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, 600);
 
-    pulseScale.value = withDelay(
-      1000,
-      withSequence(
-        withTiming(1.08, { duration: 300, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1, { duration: 300, easing: Easing.inOut(Easing.ease) })
-      )
-    );
+    // Pulse logo
+    setTimeout(() => {
+      Animated.sequence([
+        Animated.timing(logoScale, {
+          toValue: 1.08,
+          duration: 300,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoScale, {
+          toValue: 1,
+          duration: 300,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, 1000);
 
-    screenOpacity.value = withDelay(2000, withTiming(0, { duration: 400 }));
+    // Fade out entire screen
+    setTimeout(() => {
+      Animated.timing(screenOpacity, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }).start();
+    }, 2000);
 
-    // Navigate after animation completes
+    // Navigate after animation
     const timer = setTimeout(() => setDone(true), 2500);
     return () => {
       clearTimeout(timer);
@@ -91,15 +117,24 @@ export default function SplashScreen() {
     };
   }, []);
 
-  // Declarative navigation — AFTER all hooks
   if (done) {
     return <Redirect href="/(tabs)/profile" />;
   }
 
+  const rotateInterp = logoRotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
+
   return (
-    <Animated.View style={[styles.container, screenAnimatedStyle]}>
+    <Animated.View style={[styles.container, { opacity: screenOpacity }]}>
       <View style={styles.content}>
-        <Animated.View style={logoAnimatedStyle}>
+        <Animated.View
+          style={{
+            opacity: logoOpacity,
+            transform: [{ scale: logoScale }, { rotate: rotateInterp }],
+          }}
+        >
           <Image
             source={require("@/assets/vpicon.png")}
             style={styles.logo}
@@ -107,13 +142,23 @@ export default function SplashScreen() {
           />
         </Animated.View>
 
-        <Animated.View style={textAnimatedStyle}>
+        <Animated.View
+          style={{
+            opacity: textOpacity,
+            transform: [{ translateY: textTranslateY }],
+          }}
+        >
           <Text style={styles.title}>VibeProof</Text>
           <Text style={styles.subtitle}>Prove Your Vibe on Solana</Text>
         </Animated.View>
       </View>
 
-      <Animated.View style={textAnimatedStyle}>
+      <Animated.View
+        style={{
+          opacity: textOpacity,
+          transform: [{ translateY: textTranslateY }],
+        }}
+      >
         <Text style={styles.footer}>Powered by Solana</Text>
       </Animated.View>
     </Animated.View>

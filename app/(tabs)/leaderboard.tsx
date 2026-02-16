@@ -109,7 +109,7 @@ export default function LeaderboardScreen() {
         <FlatList
           data={Array.from({ length: itemCount })}
           renderItem={({ index }) => renderLeaderboardRow({}, index)}
-          keyExtractor={() => Math.random().toString()}
+          keyExtractor={(_, index) => index.toString()}
           scrollEnabled={false}
           refreshControl={
             <RefreshControl
