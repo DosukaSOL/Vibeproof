@@ -2,6 +2,7 @@
  * Leaderboard Tab
  * See top users by XP
  */
+import { FadeInView } from "@/components/FadeInView";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useWallet } from "@/hooks/useWallet";
 import { formatWalletAddress } from "@/lib/solana";
