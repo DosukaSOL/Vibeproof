@@ -44,6 +44,7 @@ export default function TabsLayout() {
           fontSize: 11,
           fontWeight: "600",
         },
+        animation: "none",
       }}
     >
       <Tabs.Screen
