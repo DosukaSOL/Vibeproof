@@ -7,7 +7,7 @@
     "scheme": "vibeproof",
     "icon": "./assets/vpicon.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
 
     "owner": "dosukasol",
 

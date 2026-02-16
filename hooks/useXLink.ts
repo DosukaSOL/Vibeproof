@@ -1,26 +1,17 @@
 /**
  * useXLink Hook
- * Manages X (Twitter) account linking state
+ * Manages X (Twitter) account linking state.
+ * OAuth flow uses expo-web-browser directly (NO expo-auth-session hooks).
  */
 import { CONFIG } from "@/lib/config";
-import { completeXLink, getXLinkFromDb, loadXLink, unlinkX, XLinkStatus } from "@/lib/xLink";
-import * as AuthSession from "expo-auth-session";
-import * as WebBrowser from "expo-web-browser";
+import {
+    completeXLink,
+    getXLinkFromDb,
+    loadXLink,
+    unlinkX,
+    XLinkStatus,
+} from "@/lib/xLink";
 import { useCallback, useEffect, useState } from "react";
-
-// Required for expo-auth-session
-try {
-  WebBrowser.maybeCompleteAuthSession();
-} catch (e) {
-  console.warn("[useXLink] maybeCompleteAuthSession failed:", e);
-}
-
-// X OAuth 2.0 endpoints
-const discovery: AuthSession.DiscoveryDocument = {
-  authorizationEndpoint: "https://twitter.com/i/oauth2/authorize",
-  tokenEndpoint: "https://api.x.com/2/oauth2/token",
-  revocationEndpoint: "https://api.x.com/2/oauth2/revoke",
-};
 
 export interface UseXLinkReturn {
   status: XLinkStatus;
@@ -43,31 +34,15 @@ export function useXLink(walletAddress: string | null): UseXLinkReturn {
   const [isUnlinking, setIsUnlinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const redirectUri = AuthSession.makeRedirectUri({
-    scheme: CONFIG.APP_SCHEME,
-    path: "x-callback",
-  });
-
-  // When X_CLIENT_ID is not set, pass a placeholder config.
-  // `request` will still be null until the async load completes,
-  // and we guard `promptAsync` calls behind the isLinked check.
-  const authConfig: AuthSession.AuthRequestConfig = {
-    clientId: CONFIG.X_CLIENT_ID || "__unused__",
-    redirectUri,
-    scopes: ["tweet.read", "users.read", "follows.read", "offline.access"],
-    usePKCE: true,
-    responseType: AuthSession.ResponseType.Code,
-  };
-
-  const [request, response, promptAsync] = AuthSession.useAuthRequest(
-    authConfig,
-    discovery
-  );
-
   // Load status on mount
   useEffect(() => {
     if (!walletAddress) {
-      setStatus({ isLinked: false, username: null, userId: null, linkedAt: null });
+      setStatus({
+        isLinked: false,
+        username: null,
+        userId: null,
+        linkedAt: null,
+      });
       return;
     }
 
@@ -93,33 +68,6 @@ export function useXLink(walletAddress: string | null): UseXLinkReturn {
     })();
   }, [walletAddress]);
 
-  // Handle OAuth response
-  useEffect(() => {
-    if (!response || response.type !== "success" || !walletAddress) return;
-
-    const code = response.params?.code;
-    if (!code || !request?.codeVerifier) return;
-
-    (async () => {
-      try {
-        setIsLinking(true);
-        setError(null);
-        const result = await completeXLink(
-          walletAddress,
-          code,
-          request.codeVerifier!,
-          redirectUri
-        );
-        setStatus(result);
-      } catch (err: any) {
-        setError(err.message || "Failed to link X account");
-        console.error("[useXLink] Link error:", err);
-      } finally {
-        setIsLinking(false);
-      }
-    })();
-  }, [response]);
-
   const linkX = useCallback(async () => {
     if (!walletAddress) {
       setError("Connect your wallet first");
@@ -127,19 +75,59 @@ export function useXLink(walletAddress: string | null): UseXLinkReturn {
     }
 
     if (!CONFIG.X_CLIENT_ID) {
-      setError("X OAuth not configured. Set EXPO_PUBLIC_X_CLIENT_ID env var.");
+      setError("X linking coming soon — requires server configuration.");
       return;
     }
 
+    // When X_CLIENT_ID is configured, use WebBrowser.openAuthSessionAsync
+    // to handle the OAuth PKCE flow manually (no expo-auth-session hooks)
     try {
       setIsLinking(true);
       setError(null);
-      await promptAsync();
+
+      const WebBrowser = require("expo-web-browser");
+      const Linking = require("expo-linking");
+
+      const redirectUri = Linking.createURL("x-callback");
+      const codeVerifier = generateCodeVerifier();
+      const codeChallenge = await generateCodeChallenge(codeVerifier);
+
+      const params = new URLSearchParams({
+        response_type: "code",
+        client_id: CONFIG.X_CLIENT_ID,
+        redirect_uri: redirectUri,
+        scope: "tweet.read users.read follows.read offline.access",
+        state: Math.random().toString(36).slice(2),
+        code_challenge: codeChallenge,
+        code_challenge_method: "S256",
+      });
+
+      const authUrl = `https://twitter.com/i/oauth2/authorize?${params.toString()}`;
+      const result = await WebBrowser.openAuthSessionAsync(
+        authUrl,
+        redirectUri
+      );
+
+      if (result.type === "success" && result.url) {
+        const url = new URL(result.url);
+        const code = url.searchParams.get("code");
+        if (code) {
+          const linkResult = await completeXLink(
+            walletAddress,
+            code,
+            codeVerifier,
+            redirectUri
+          );
+          setStatus(linkResult);
+        }
+      }
     } catch (err: any) {
-      setError(err.message || "Failed to start X OAuth flow");
+      setError(err.message || "Failed to link X account");
+      console.error("[useXLink] Link error:", err);
+    } finally {
       setIsLinking(false);
     }
-  }, [walletAddress, promptAsync]);
+  }, [walletAddress]);
 
   const unlinkXAccount = useCallback(async () => {
     if (!walletAddress) return;
@@ -148,7 +136,12 @@ export function useXLink(walletAddress: string | null): UseXLinkReturn {
       setIsUnlinking(true);
       setError(null);
       await unlinkX(walletAddress);
-      setStatus({ isLinked: false, username: null, userId: null, linkedAt: null });
+      setStatus({
+        isLinked: false,
+        username: null,
+        userId: null,
+        linkedAt: null,
+      });
     } catch (err: any) {
       setError(err.message || "Failed to unlink X account");
     } finally {
@@ -175,4 +168,27 @@ export function useXLink(walletAddress: string | null): UseXLinkReturn {
     unlinkXAccount,
     refresh,
   };
+}
+
+// ─── PKCE Helpers ───────────────────────────────────────
+function generateCodeVerifier(): string {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
+  let result = "";
+  const values = new Uint8Array(64);
+  globalThis.crypto.getRandomValues(values);
+  for (let i = 0; i < 64; i++) {
+    result += chars[values[i] % chars.length];
+  }
+  return result;
+}
+
+async function generateCodeChallenge(verifier: string): Promise<string> {
+  // SHA-256 hash then base64url encode
+  const encoder = new TextEncoder();
+  const data = encoder.encode(verifier);
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", data);
+  const bytes = Array.from(new Uint8Array(digest));
+  const base64 = btoa(String.fromCharCode.apply(null, bytes));
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
