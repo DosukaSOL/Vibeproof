@@ -1,242 +1,228 @@
-import React, { useEffect, useMemo, useState } from 'react';
+/**
+ * Profile Tab
+ * User identity, wallet, and stats
+ */
+import { StatsPanel } from "@/components/StatsPanel";
+import { WalletButton } from "@/components/WalletButton";
+import { useUser } from "@/hooks/useUser";
+import { useWallet } from "@/hooks/useWallet";
+import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  StyleSheet,
-  Alert,
-  RefreshControl,
-  ScrollView,
-} from 'react-native';
-import { supabase } from '../../lib/supabase';
-import { useSession } from '../../lib/session';
+    ActivityIndicator,
+    Alert,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
+} from "react-native";
 
-function shortWallet(w: string) {
-  if (!w) return '';
-  return w.length <= 10 ? w : `${w.slice(0, 4)}…${w.slice(-4)}`;
-}
+export default function ProfileScreen() {
+  const { address, isConnected } = useWallet();
+  const { user, isLoading, error, setUsername, refresh } = useUser(
+    isConnected ? address : null
+  );
 
-export default function Profile() {
-  const { wallet, setSession } = useSession();
+  const [newUsername, setNewUsername] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const [loading, setLoading] = useState(false);
-
-  const [username, setUsername] = useState('');
-  const [savedUsername, setSavedUsername] = useState('');
-
-  const [stats, setStats] = useState<{ xp: number; level: number; streak: number } | null>(null);
-  const [rank, setRank] = useState<number | null>(null);
-
-  const w = useMemo(() => wallet ?? '', [wallet]);
-  const changed = username !== savedUsername;
-
-  const load = async () => {
-    if (!w) return;
-    setLoading(true);
-
-    try {
-      // 1) Fetch user row
-      const { data, error } = await supabase
-        .from('users')
-        .select('username,xp,level,streak')
-        .eq('wallet', w)
-        .single();
-
-      if (error) throw error;
-
-      const u = (data?.username ?? '').toString();
-      setUsername(u);
-      setSavedUsername(u);
-
-      const myXp = Number(data?.xp ?? 0);
-      setStats({
-        xp: myXp,
-        level: Number(data?.level ?? 1),
-        streak: Number(data?.streak ?? 0),
-      });
-
-      // 2) Rank = how many users have more XP than you + 1
-      const { count, error: rankErr } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true })
-        .gt('xp', myXp);
-
-      if (rankErr) throw rankErr;
-
-      setRank((count ?? 0) + 1);
-    } catch (e: any) {
-      console.log('Profile load error:', e?.message ?? e);
-      Alert.alert('Profile error', e?.message ?? 'Unknown error');
-    } finally {
-      setLoading(false);
+  // Sync username when user changes
+  useEffect(() => {
+    if (user?.username) {
+      setNewUsername(user.username);
     }
+  }, [user?.username]);
+
+  const validateUsername = (username: string): boolean => {
+    if (!username.trim()) return false;
+    return /^[a-zA-Z0-9_]{3,20}$/.test(username);
   };
 
-  const saveUsername = async () => {
-    if (!w) return;
-    const trimmed = username.trim();
-
-    // simple validation: letters, numbers, underscore; 1-20 chars
-    if (!/^[a-zA-Z0-9_]{1,20}$/.test(trimmed)) {
-      Alert.alert('Invalid username', 'Use letters, numbers, underscore. Max 20 chars.');
+  const handleSaveUsername = async () => {
+    if (!isConnected) {
+      Alert.alert("Not connected", "Connect your wallet first.");
       return;
     }
 
-    setLoading(true);
-    try {
-      const { error } = await supabase.from('users').update({ username: trimmed }).eq('wallet', w);
-      if (error) throw error;
+    const trimmed = newUsername.trim();
+    if (!validateUsername(trimmed)) {
+      Alert.alert(
+        "Invalid username",
+        "Use 3-20 characters: letters, numbers, underscores"
+      );
+      return;
+    }
 
-      setSavedUsername(trimmed);
-      Alert.alert('Saved', 'Username updated.');
-    } catch (e: any) {
-      console.log('Save username error:', e?.message ?? e);
-      Alert.alert('Save failed', e?.message ?? 'Unknown error');
+    try {
+      setIsSaving(true);
+      await setUsername(trimmed);
+      Alert.alert("Success", "Username updated!");
+    } catch (err: any) {
+      Alert.alert("Error", err?.message || "Failed to update username");
     } finally {
-      setLoading(false);
+      setIsSaving(false);
     }
   };
 
-  const disconnect = async () => {
-    await setSession({ wallet: null, authToken: null });
+  const handleRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      await refresh();
+    } finally {
+      setIsRefreshing(false);
+    }
   };
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [w]);
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ paddingBottom: 30 }}
-      refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
+      contentContainerStyle={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+      }
     >
-      <Text style={styles.title}>Profile</Text>
-      <Text style={styles.sub}>Identity + stats</Text>
-
-      <View style={styles.card}>
-        <Text style={styles.label}>Wallet</Text>
-        <Text style={styles.value}>{w ? shortWallet(w) : 'Not connected'}</Text>
-
-        <View style={{ height: 14 }} />
-
-        <Text style={styles.label}>Username</Text>
-        <TextInput
-          value={username}
-          onChangeText={setUsername}
-          placeholder="e.g. DosukaSOL"
-          placeholderTextColor="#777"
-          style={styles.input}
-          autoCapitalize="none"
-          autoCorrect={false}
-          editable={!!w}
-        />
-        <Text style={styles.hint}>Allowed: letters, numbers, underscore. Max 20 chars.</Text>
-
-        <Pressable
-          style={[styles.btn, (!w || !changed || loading) && styles.btnDisabled]}
-          onPress={saveUsername}
-          disabled={!w || !changed || loading}
-        >
-          <Text style={styles.btnText}>{changed ? 'Save username' : 'Saved'}</Text>
-        </Pressable>
-
-        <Pressable style={[styles.linkBtn, !w && styles.btnDisabled]} onPress={disconnect} disabled={!w}>
-          <Text style={styles.linkText}>Disconnect wallet</Text>
-        </Pressable>
+      <View style={styles.header}>
+        <Text style={styles.title}>Profile</Text>
+        <Text style={styles.subtitle}>Your Web3 Identity</Text>
       </View>
 
+      {/* Wallet Section */}
+      <WalletButton
+        onConnectSuccess={() => {
+          Alert.alert("Success", "Wallet connected!");
+        }}
+        onDisconnectSuccess={() => {
+          Alert.alert("Disconnected", "Wallet cleared.");
+        }}
+      />
+
+      {error && (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+
+      {/* Stats Section */}
+      <StatsPanel user={user} isLoading={isLoading} />
+
+      {/* Username Section */}
+      {isConnected && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Username</Text>
+          <TextInput
+            value={newUsername}
+            onChangeText={setNewUsername}
+            placeholder="Enter your username"
+            maxLength={20}
+            editable={!isSaving}
+            style={styles.input}
+            placeholderTextColor="#999"
+          />
+          <Text style={styles.charCounter}>
+            {newUsername.length}/20 characters
+          </Text>
+
+          <Pressable
+            onPress={handleSaveUsername}
+            disabled={isSaving || !newUsername.trim()}
+            style={[styles.button, isSaving && styles.buttonDisabled]}
+          >
+            {isSaving ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Text style={styles.buttonText}>Save Username</Text>
+            )}
+          </Pressable>
+        </View>
+      )}
+
+      {/* Info Section */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Stats</Text>
-
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Text style={styles.statLabel}>Level</Text>
-            <Text style={styles.statValue}>{stats ? String(stats.level) : '-'}</Text>
-          </View>
-
-          <View style={styles.stat}>
-            <Text style={styles.statLabel}>XP</Text>
-            <Text style={styles.statValue}>{stats ? String(stats.xp) : '-'}</Text>
-          </View>
-
-          <View style={styles.stat}>
-            <Text style={styles.statLabel}>Streak</Text>
-            <Text style={styles.statValue}>{stats ? `${stats.streak}🔥` : '-'}</Text>
-          </View>
-        </View>
-
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Text style={styles.statLabel}>Rank</Text>
-            <Text style={styles.statValue}>{rank ?? '-'}</Text>
-          </View>
-        </View>
-
-        <Text style={styles.hint}>
-          Pull down to refresh. Rank is based on XP (higher XP = better rank).
+        <Text style={styles.cardTitle}>About</Text>
+        <Text style={styles.infoText}>
+          VibeProof is a proof-of-action gaming platform on Solana. Complete
+          missions, earn XP, and climb the leaderboard!
         </Text>
       </View>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
-  title: { fontSize: 34, fontWeight: '800', color: '#000' },
-  sub: { fontSize: 14, opacity: 0.7, color: '#000', marginBottom: 12 },
-
-  card: {
-    borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 16,
-    padding: 14,
-    marginTop: 12,
-    gap: 10,
-    backgroundColor: '#fff',
+const styles = {
+  container: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 16,
   },
-
-  label: { fontSize: 12, opacity: 0.7, color: '#000' },
-  value: { fontSize: 16, fontWeight: '700', color: '#000' },
-
+  header: {
+    marginBottom: 4,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "700" as const,
+    color: "#000",
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 4,
+  },
+  card: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    padding: 14,
+    gap: 10,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: "#000",
+  },
   input: {
     borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 10,
+    borderColor: "#E5E7EB",
+    borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    color: '#000',
-    fontSize: 16,
+    fontSize: 14,
+    color: "#000",
   },
-
-  hint: { fontSize: 12, opacity: 0.7, color: '#000' },
-
-  btn: {
-    padding: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    backgroundColor: '#111',
-    marginVertical: 8,
+  charCounter: {
+    fontSize: 12,
+    color: "#999",
   },
-  btnDisabled: { opacity: 0.4 },
-  btnText: { color: 'white', fontWeight: '700' },
-
-  linkBtn: { alignItems: 'center', paddingVertical: 6 },
-  linkText: { color: '#000', fontWeight: '700' },
-
-  cardTitle: { fontSize: 18, fontWeight: '800', color: '#000' },
-
-  statsRow: { flexDirection: 'row', gap: 10 },
-  stat: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 14,
+  button: {
+    backgroundColor: "#7C3AED",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center" as const,
+    marginTop: 4,
+  },
+  buttonDisabled: {
+    backgroundColor: "#D1D5DB",
+  },
+  buttonText: {
+    color: "white",
+    fontWeight: "700" as const,
+    fontSize: 14,
+  },
+  errorBox: {
+    backgroundColor: "#FEE2E2",
+    borderRadius: 8,
     padding: 12,
-    gap: 6,
+    borderWidth: 1,
+    borderColor: "#FECACA",
   },
-  statLabel: { fontSize: 12, opacity: 0.7, color: '#000' },
-  statValue: { fontSize: 18, fontWeight: '800', color: '#000' },
-});
+  errorText: {
+    color: "#DC2626",
+    fontSize: 13,
+  },
+  infoText: {
+    fontSize: 13,
+    color: "#666",
+    lineHeight: 18,
+  },
+};

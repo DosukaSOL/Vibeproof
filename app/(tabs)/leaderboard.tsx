@@ -1,126 +1,262 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, RefreshControl } from 'react-native';
-import { supabase } from '../../lib/supabase';
-import { useSession } from '../../lib/session';
+/**
+ * Leaderboard Tab
+ * See top users by XP
+ */
+import { useLeaderboard } from "@/hooks/useLeaderboard";
+import { useWallet } from "@/hooks/useWallet";
+import { formatWalletAddress } from "@/lib/solana";
+import React, { useState } from "react";
+import {
+    ActivityIndicator,
+    FlatList,
+    RefreshControl,
+    Text,
+    View
+} from "react-native";
 
-type Row = {
-  wallet: string;
-  username: string | null;
-  xp: number;
-  level: number;
-  streak: number;
-};
+export default function LeaderboardScreen() {
+  const { address, isConnected } = useWallet();
+  const { users, isLoading, hasMore, error, loadMore, refresh } =
+    useLeaderboard(isConnected ? address : null);
 
-function shortWallet(w: string) {
-  if (!w) return '';
-  return w.length <= 10 ? w : `${w.slice(0, 4)}…${w.slice(-4)}`;
-}
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-export default function Leaderboard() {
-  const { wallet } = useSession();
-  const [rows, setRows] = useState<Row[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const myWallet = useMemo(() => wallet ?? '', [wallet]);
-
-  const load = async () => {
-    setLoading(true);
+  const handleRefresh = async () => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('wallet,username,xp,level,streak')
-        .order('xp', { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-
-      const normalized = (data ?? []).map((r: any) => ({
-        wallet: String(r.wallet ?? ''),
-        username: r.username ?? null,
-        xp: Number(r.xp ?? 0),
-        level: Number(r.level ?? 1),
-        streak: Number(r.streak ?? 0),
-      }));
-
-      setRows(normalized);
-    } catch (e: any) {
-      // Keep it simple for now; later we can add a toast
-      console.log('Leaderboard load error:', e?.message ?? e);
-      setRows([]);
+      setIsRefreshing(true);
+      await refresh();
     } finally {
-      setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    load();
-  }, []);
+  const handleEndReached = () => {
+    if (hasMore && !isLoading) {
+      loadMore();
+    }
+  };
+
+  const renderLeaderboardRow = (_: any, index: number) => {
+    const user = users[index];
+    if (!user) return null;
+
+    const isCurrentUser = user.wallet === address;
+    const level = Math.floor(user.xp / 1000) + 1;
+
+    return (
+      <View
+        key={user.wallet}
+        style={[styles.row, isCurrentUser && styles.currentUserRow]}
+      >
+        <View style={styles.rankContainer}>
+          <Text style={styles.rank}>#{index + 1}</Text>
+        </View>
+
+        <View style={styles.userInfo}>
+          <Text style={styles.username}>
+            {user.username || formatWalletAddress(user.wallet)}
+          </Text>
+          <Text style={styles.wallet}>{formatWalletAddress(user.wallet)}</Text>
+        </View>
+
+        <View style={styles.statsContainer}>
+          <View style={styles.statBox}>
+            <Text style={styles.statLabel}>Lvl</Text>
+            <Text style={styles.statValue}>{level}</Text>
+          </View>
+          <View style={styles.statBox}>
+            <Text style={styles.statLabel}>XP</Text>
+            <Text style={styles.statValue}>{user.xp}</Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  const itemCount = users.length + (hasMore && !isLoading ? 1 : 0);
+  const shouldShowLoadMore = hasMore && !isLoading && users.length > 0;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Leaderboard</Text>
-      <Text style={styles.sub}>Top 50 by XP</Text>
-
-      <View style={styles.headerRow}>
-        <Text style={[styles.hCell, { width: 46 }]}>#</Text>
-        <Text style={[styles.hCell, { flex: 1 }]}>Player</Text>
-        <Text style={[styles.hCell, { width: 70, textAlign: 'right' }]}>Level</Text>
-        <Text style={[styles.hCell, { width: 70, textAlign: 'right' }]}>XP</Text>
-        <Text style={[styles.hCell, { width: 70, textAlign: 'right' }]}>Streak</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>Leaderboard</Text>
+        <Text style={styles.subtitle}>Ranked by XP</Text>
       </View>
 
-      <FlatList
-        data={rows}
-        keyExtractor={(item) => item.wallet}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        contentContainerStyle={{ paddingBottom: 20 }}
-        renderItem={({ item, index }) => {
-          const isMe = myWallet && item.wallet === myWallet;
-          const name = item.username?.trim() ? item.username : shortWallet(item.wallet);
+      {error && (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
 
-          return (
-            <View style={[styles.row, isMe && styles.meRow]}>
-              <Text style={[styles.cell, { width: 46 }]}>{index + 1}</Text>
-              <Text style={[styles.cell, { flex: 1 }]} numberOfLines={1}>
-                {name} {isMe ? ' (You)' : ''}
-              </Text>
-              <Text style={[styles.cell, { width: 70, textAlign: 'right' }]}>{item.level}</Text>
-              <Text style={[styles.cell, { width: 70, textAlign: 'right' }]}>{item.xp}</Text>
-              <Text style={[styles.cell, { width: 70, textAlign: 'right' }]}>{item.streak}🔥</Text>
-            </View>
-          );
-        }}
-        ListEmptyComponent={
-          <Text style={styles.empty}>No users yet. Complete a mission to appear here.</Text>
-        }
-      />
+      {isLoading && users.length === 0 ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#7C3AED" />
+          <Text style={styles.loadingText}>Loading leaderboard...</Text>
+        </View>
+      ) : users.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyIcon}>🏆</Text>
+          <Text style={styles.emptyTitle}>No Users Yet</Text>
+          <Text style={styles.emptyText}>
+            Be the first to complete missions and join the leaderboard!
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={Array.from({ length: itemCount })}
+          renderItem={({ index }) => renderLeaderboardRow({}, index)}
+          keyExtractor={() => Math.random().toString()}
+          scrollEnabled={false}
+          listKey="leaderboard"
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+            />
+          }
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.5}
+        />
+      )}
+
+      {shouldShowLoadMore && (
+        <View style={styles.loadMoreContainer}>
+          <ActivityIndicator size="small" color="#7C3AED" />
+          <Text style={styles.loadMoreText}>Loading more...</Text>
+        </View>
+      )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
-  title: { fontSize: 28, fontWeight: '800', color: '#000' },
-  sub: { marginTop: 4, opacity: 0.7, color: '#000' },
-
-  headerRow: {
-    marginTop: 14,
-    flexDirection: 'row',
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#eee',
-  },
-  hCell: { fontWeight: '800', color: '#000', opacity: 0.7 },
-
-  row: {
-    flexDirection: 'row',
+const styles = {
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderColor: '#f1f1f1',
+    backgroundColor: "#FFF",
   },
-  meRow: { backgroundColor: '#f6f6ff' },
-  cell: { color: '#000' },
-
-  empty: { marginTop: 20, opacity: 0.7, color: '#000' },
-});
+  header: {
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "700" as const,
+    color: "#000",
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 4,
+  },
+  errorBox: {
+    backgroundColor: "#FEE2E2",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
+  errorText: {
+    color: "#DC2626",
+    fontSize: 13,
+  },
+  loadingContainer: {
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingVertical: 100,
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: "#666",
+  },
+  row: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: "white",
+    borderRadius: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    gap: 12,
+  },
+  currentUserRow: {
+    backgroundColor: "#F0F9FF",
+    borderColor: "#0EA5E9",
+    borderWidth: 2,
+  },
+  rankContainer: {
+    width: 40,
+    alignItems: "center" as const,
+  },
+  rank: {
+    fontSize: 14,
+    fontWeight: "700" as const,
+    color: "#7C3AED",
+  },
+  userInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  username: {
+    fontSize: 15,
+    fontWeight: "700" as const,
+    color: "#000",
+  },
+  wallet: {
+    fontSize: 12,
+    color: "#999",
+  },
+  statsContainer: {
+    flexDirection: "row" as const,
+    gap: 8,
+  },
+  statBox: {
+    alignItems: "center" as const,
+    gap: 2,
+  },
+  statLabel: {
+    fontSize: 10,
+    color: "#999",
+    fontWeight: "600" as const,
+  },
+  statValue: {
+    fontSize: 14,
+    fontWeight: "700" as const,
+    color: "#000",
+  },
+  emptyState: {
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingVertical: 100,
+    gap: 12,
+  },
+  emptyIcon: {
+    fontSize: 56,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "700" as const,
+    color: "#000",
+  },
+  emptyText: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center" as const,
+    maxWidth: 280,
+    lineHeight: 18,
+  },
+  loadMoreContainer: {
+    alignItems: "center" as const,
+    paddingVertical: 20,
+    gap: 8,
+  },
+  loadMoreText: {
+    fontSize: 12,
+    color: "#666",
+  },
+};

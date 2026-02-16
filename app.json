@@ -4,13 +4,20 @@
     "slug": "vibeproof",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/vpicon.png",
     "scheme": "vibeproof",
+    "icon": "./assets/vpicon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
 
+    "owner": "dosukasol",
+
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dosukasol.vibeproof",
+      "associatedDomains": [
+        "applinks:*.solana-mobile.com",
+        "applinks:*.identity.solana"
+      ]
     },
 
     "android": {
@@ -18,7 +25,30 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/vpicon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [
+            {
+              "scheme": "vibeproof"
+            }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [
+            {
+              "scheme": "https",
+              "host": "*.solana-mobile.com",
+              "pathPrefix": ""
+            }
+          ]
+        }
+      ],
+      "minSdkVersion": 23
     },
 
     "web": {
@@ -48,10 +78,16 @@
     },
 
     "extra": {
-      "router": {},
+      "router": {
+        "origin": false
+      },
       "eas": {
         "projectId": "f13fa36d-6d7d-4ca2-b3f8-c64e1f387593"
       }
+    },
+
+    "androidStatusBar": {
+      "backgroundColor": "#ffffff"
     }
   }
 }

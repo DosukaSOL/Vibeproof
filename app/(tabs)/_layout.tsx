@@ -1,12 +1,13 @@
-import React from 'react';
-import { Tabs } from 'expo-router';
+// app/(tabs)/_layout.tsx
+import React from "react";
+import { Tabs } from "expo-router";
 
-export default function TabLayout() {
+export default function TabsLayout() {
   return (
-    <Tabs screenOptions={{ headerShown: true }}>
-      <Tabs.Screen name="index" options={{ title: 'Missions' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
-      <Tabs.Screen name="leaderboard" options={{ title: 'Leaderboard' }} />
+    <Tabs initialRouteName="profile" screenOptions={{ headerShown: true }}>
+      <Tabs.Screen name="missions" options={{ title: "Missions" }} />
+      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
+      <Tabs.Screen name="leaderboard" options={{ title: "Leaderboard" }} />
     </Tabs>
   );
 }

@@ -1,11 +1,11 @@
-import React from 'react';
-import { Stack } from 'expo-router';
-import { SessionProvider } from '../lib/session';
+// app/_layout.tsx
+import React from "react";
+import { Stack } from "expo-router";
 
 export default function RootLayout() {
   return (
-    <SessionProvider>
-      <Stack screenOptions={{ headerShown: false }} />
-    </SessionProvider>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+    </Stack>
   );
 }
