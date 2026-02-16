@@ -1,25 +1,21 @@
 /**
  * MissionCard Component
- * Display individual mission with animations + haptics
+ * Display individual mission with animations + haptics.
+ * Uses plain React Native Animated API — NO Reanimated worklets.
  */
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { SPRING } from "@/lib/animations";
 import { hapticError, hapticXpGained } from "@/lib/haptics";
 import { DbMission } from "@/lib/supabase";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    Animated,
     Text,
     TextInput,
     View,
 } from "react-native";
-import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withSequence,
-    withSpring,
-} from "react-native-reanimated";
 
 interface MissionCardProps {
   mission: DbMission;
@@ -38,10 +34,7 @@ export function MissionCard({
   const [proof, setProof] = useState("");
 
   // XP reward pop animation
-  const xpScale = useSharedValue(1);
-  const xpAnimStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: xpScale.value }],
-  }));
+  const xpScale = useRef(new Animated.Value(1)).current;
 
   const handleSubmit = async () => {
     if (!proof.trim()) {
@@ -54,10 +47,10 @@ export function MissionCard({
       await onSubmit(proof.trim());
       await hapticXpGained();
       // Pop the XP badge
-      xpScale.value = withSequence(
-        withSpring(1.4, SPRING.bouncy),
-        withSpring(1, SPRING.default)
-      );
+      Animated.sequence([
+        Animated.spring(xpScale, { toValue: 1.4, ...SPRING.bouncy, useNativeDriver: true }),
+        Animated.spring(xpScale, { toValue: 1, ...SPRING.default, useNativeDriver: true }),
+      ]).start();
       Alert.alert("Success", "Mission completion submitted!");
       setProof("");
       setShowProofInput(false);
@@ -97,7 +90,7 @@ export function MissionCard({
       )}
 
       <View style={styles.footer}>
-        <Animated.View style={xpAnimStyle}>
+        <Animated.View style={{ transform: [{ scale: xpScale }] }}>
           <Text style={styles.xpReward}>+{mission.xp_reward} XP</Text>
         </Animated.View>
 

@@ -1,26 +1,22 @@
 /**
  * EngineMissionCard Component
- * Mission card for the new mission engine with auto-verification + status
+ * Mission card for the new mission engine with auto-verification + status.
+ * Uses plain React Native Animated API — NO Reanimated worklets.
  */
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { SPRING } from "@/lib/animations";
 import { hapticError, hapticXpGained } from "@/lib/haptics";
 import { MissionTemplate } from "@/lib/missionTemplates";
 import { T } from "@/lib/theme";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    Animated,
     Text,
     TextInput,
     View,
 } from "react-native";
-import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withSequence,
-    withSpring,
-} from "react-native-reanimated";
 
 type VerifyStatus = "idle" | "verifying" | "verified" | "failed";
 
@@ -44,10 +40,7 @@ export function EngineMissionCard({
   const [showProofInput, setShowProofInput] = useState(false);
   const [proof, setProof] = useState("");
 
-  const xpScale = useSharedValue(1);
-  const xpAnimStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: xpScale.value }],
-  }));
+  const xpScale = useRef(new Animated.Value(1)).current;
 
   const isManual = mission.verification_type === "manual";
   const isAutoVerifiable =
@@ -83,10 +76,10 @@ export function EngineMissionCard({
       const result = await onVerify();
       if (result?.status === "verified") {
         await hapticXpGained();
-        xpScale.value = withSequence(
-          withSpring(1.4, SPRING.bouncy),
-          withSpring(1, SPRING.default)
-        );
+        Animated.sequence([
+          Animated.spring(xpScale, { toValue: 1.4, ...SPRING.bouncy, useNativeDriver: true }),
+          Animated.spring(xpScale, { toValue: 1, ...SPRING.default, useNativeDriver: true }),
+        ]).start();
       } else {
         await hapticError();
         Alert.alert("Verification Failed", result?.verification_result?.message || "Could not verify. Try again later.");
@@ -108,10 +101,10 @@ export function EngineMissionCard({
         const result = await onSubmitProof(proof.trim());
         if (result?.status === "verified") {
           await hapticXpGained();
-          xpScale.value = withSequence(
-            withSpring(1.4, SPRING.bouncy),
-            withSpring(1, SPRING.default)
-          );
+          Animated.sequence([
+            Animated.spring(xpScale, { toValue: 1.4, ...SPRING.bouncy, useNativeDriver: true }),
+            Animated.spring(xpScale, { toValue: 1, ...SPRING.default, useNativeDriver: true }),
+          ]).start();
         }
       }
       setProof("");
@@ -146,7 +139,7 @@ export function EngineMissionCard({
       )}
 
       <View style={styles.footer}>
-        <Animated.View style={xpAnimStyle}>
+        <Animated.View style={{ transform: [{ scale: xpScale }] }}>
           <Text style={styles.xpReward}>+{mission.xp_reward} XP</Text>
         </Animated.View>
 
