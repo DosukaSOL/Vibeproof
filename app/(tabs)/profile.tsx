@@ -10,7 +10,6 @@ import { XLinkCard } from "@/components/XLinkCard";
 import { useUser } from "@/hooks/useUser";
 import { useWallet } from "@/hooks/useWallet";
 import { useXLink } from "@/hooks/useXLink";
-import { CONFIG } from "@/lib/config";
 import { hapticSuccess } from "@/lib/haptics";
 import React, { useEffect, useState } from "react";
 import {
@@ -119,8 +118,8 @@ export default function ProfileScreen() {
         <StatsPanel user={user} isLoading={isLoading} />
       </FadeInView>
 
-      {/* X Account Linking — only show when configured */}
-      {isConnected && !!CONFIG.X_CLIENT_ID && (
+      {/* X Account Linking */}
+      {isConnected && (
         <FadeInView index={3}>
           <XLinkCard xLink={xLink} />
         </FadeInView>

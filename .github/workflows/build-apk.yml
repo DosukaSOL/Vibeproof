@@ -41,8 +41,8 @@ jobs:
       - name: Generate native Android project
         run: npx expo prebuild --platform android --clean --no-install
         env:
-          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'YOUR_SUPABASE_URL' }}
-          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY' }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           EXPO_PUBLIC_SOLANA_CLUSTER: ${{ secrets.SOLANA_CLUSTER || 'mainnet-beta' }}
 
       - name: Configure Gradle and enable JS bundling
@@ -72,8 +72,8 @@ jobs:
         run: ./gradlew assembleDebug --no-daemon --stacktrace
         env:
           NODE_ENV: production
-          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'YOUR_SUPABASE_URL' }}
-          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY' }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           EXPO_PUBLIC_SOLANA_CLUSTER: ${{ secrets.SOLANA_CLUSTER || 'mainnet-beta' }}
 
       - name: Verify APK contains JS bundle

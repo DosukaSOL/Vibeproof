@@ -3,15 +3,12 @@ import { Tabs } from "expo-router";
 import React from "react";
 import { Image, Text, View } from "react-native";
 
-const LogoHeader = () => (
-  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+const CenteredLogo = () => (
+  <View style={{ alignItems: 'center', justifyContent: 'center' }}>
     <Image
-      source={require('@/assets/noble.png')}
-      style={{ width: 44, height: 44, resizeMode: 'contain' }}
+      source={require('@/assets/vpicon.png')}
+      style={{ width: 52, height: 52, resizeMode: 'contain', borderRadius: 10 }}
     />
-    <Text style={{ fontSize: 22, fontWeight: '800', color: '#00FF00', letterSpacing: 0.5 }}>
-      VibeProof
-    </Text>
   </View>
 );
 
@@ -21,7 +18,10 @@ export default function TabsLayout() {
       initialRouteName="profile"
       screenOptions={{
         headerShown: true,
-        headerTitle: () => <LogoHeader />,
+        headerTitle: () => <CenteredLogo />,
+        headerTitleAlign: 'center',
+        headerLeft: () => null,
+        headerRight: () => null,
         headerStyle: { backgroundColor: '#000' },
         headerTintColor: '#00FF00',
         tabBarActiveTintColor: '#00FF00',
