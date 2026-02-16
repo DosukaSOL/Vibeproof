@@ -12,7 +12,11 @@ const RPC_URL =
     ? "https://api.mainnet-beta.solana.com"
     : "https://api.devnet.solana.com";
 
-const connection = new Connection(RPC_URL, "confirmed");
+let _connection: Connection | null = null;
+function getConnection(): Connection {
+  if (!_connection) _connection = new Connection(RPC_URL, "confirmed");
+  return _connection;
+}
 
 // ─── Types ───────────────────────────────────────────
 export interface VerificationResult {
@@ -31,7 +35,7 @@ export async function verifyRecentTransaction(
 ): Promise<VerificationResult> {
   try {
     const pubkey = new PublicKey(normalizeAddress(walletAddress));
-    const signatures = await connection.getSignaturesForAddress(pubkey, {
+    const signatures = await getConnection().getSignaturesForAddress(pubkey, {
       limit: 10,
     });
 
@@ -84,7 +88,7 @@ export async function verifyMinBalance(
 ): Promise<VerificationResult> {
   try {
     const pubkey = new PublicKey(normalizeAddress(walletAddress));
-    const balance = await connection.getBalance(pubkey);
+    const balance = await getConnection().getBalance(pubkey);
     const solBalance = balance / LAMPORTS_PER_SOL;
 
     if (solBalance >= minBalance) {
@@ -124,7 +128,7 @@ export async function verifyProgramInteraction(
 ): Promise<VerificationResult> {
   try {
     const pubkey = new PublicKey(normalizeAddress(walletAddress));
-    const signatures = await connection.getSignaturesForAddress(pubkey, {
+    const signatures = await getConnection().getSignaturesForAddress(pubkey, {
       limit: 50,
     });
 
@@ -135,7 +139,7 @@ export async function verifyProgramInteraction(
       if (blockTime < cutoff || sig.err) continue;
 
       // Fetch full transaction to check program IDs
-      const tx = await connection.getTransaction(sig.signature, {
+      const tx = await getConnection().getTransaction(sig.signature, {
         maxSupportedTransactionVersion: 0,
       });
 
@@ -183,7 +187,7 @@ export async function verifySelfTransfer(
 ): Promise<VerificationResult> {
   try {
     const pubkey = new PublicKey(normalizeAddress(walletAddress));
-    const signatures = await connection.getSignaturesForAddress(pubkey, {
+    const signatures = await getConnection().getSignaturesForAddress(pubkey, {
       limit: 20,
     });
 
@@ -193,7 +197,7 @@ export async function verifySelfTransfer(
       const blockTime = sig.blockTime ? sig.blockTime * 1000 : 0;
       if (blockTime < cutoff || sig.err) continue;
 
-      const tx = await connection.getTransaction(sig.signature, {
+      const tx = await getConnection().getTransaction(sig.signature, {
         maxSupportedTransactionVersion: 0,
       });
 

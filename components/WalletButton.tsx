@@ -43,10 +43,13 @@ export function WalletButton({
     }
   }, [justConnected]);
 
-  const glowStyle = useAnimatedStyle(() => ({
-    borderColor: `rgba(63, 185, 80, ${glowOpacity.value * 0.7})`,
-    borderWidth: glowOpacity.value > 0.01 ? 2 : 1,
-  }));
+  const glowStyle = useAnimatedStyle(() => {
+    const a = glowOpacity.value * 0.7;
+    return {
+      borderColor: 'rgba(63,185,80,' + a + ')',
+      borderWidth: glowOpacity.value > 0.01 ? 2 : 1,
+    };
+  });
 
   const handleConnect = async () => {
     try {
