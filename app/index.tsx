@@ -1,9 +1,9 @@
+import { Audio } from "expo-av";
 import { router } from "expo-router";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { Dimensions, Image, StyleSheet, Text, View } from "react-native";
 import Animated, {
     Easing,
-    runOnJS,
     useAnimatedStyle,
     useSharedValue,
     withDelay,
@@ -22,13 +22,23 @@ export default function SplashScreen() {
   const textTranslateY = useSharedValue(30);
   const pulseScale = useSharedValue(1);
   const screenOpacity = useSharedValue(1);
-
-  const navigateToApp = () => {
-    router.replace("/(tabs)/profile");
-  };
+  const soundRef = useRef<Audio.Sound | null>(null);
 
   useEffect(() => {
-    // 1. Logo fades in + bouncy scale from 0 → 1.15 → 1
+    // Play chime sound
+    (async () => {
+      try {
+        const { sound } = await Audio.Sound.createAsync(
+          require("@/assets/sounds/chime.wav"),
+          { shouldPlay: true, volume: 0.7 }
+        );
+        soundRef.current = sound;
+      } catch (e) {
+        console.warn("[Splash] Audio error:", e);
+      }
+    })();
+
+    // 1. Logo fades in + bouncy scale from 0 → 1
     logoOpacity.value = withTiming(1, { duration: 400 });
     logoScale.value = withSpring(1, {
       damping: 8,
@@ -58,15 +68,22 @@ export default function SplashScreen() {
       )
     );
 
-    // 5. Fade out the whole screen then navigate
+    // 5. Fade out the whole screen (visual only — navigation handled by setTimeout)
     screenOpacity.value = withDelay(
       2000,
-      withTiming(0, { duration: 400 }, (finished) => {
-        if (finished) {
-          runOnJS(navigateToApp)();
-        }
-      })
+      withTiming(0, { duration: 400 })
     );
+
+    // 6. Navigate on the JS thread after animation completes
+    const navTimer = setTimeout(() => {
+      router.replace("/(tabs)/profile" as any);
+    }, 2500);
+
+    return () => {
+      clearTimeout(navTimer);
+      // Unload sound
+      soundRef.current?.unloadAsync().catch(() => {});
+    };
   }, []);
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({
