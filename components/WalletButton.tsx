@@ -1,10 +1,19 @@
 /**
  * WalletButton Component
- * Display and control wallet connection
+ * Display and control wallet connection with animations + haptics
  */
+import { AnimatedPressable } from "@/components/AnimatedPressable";
+import { SuccessPopView } from "@/components/SuccessPopView";
 import { useWallet } from "@/hooks/useWallet";
-import React from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { SPRING } from "@/lib/animations";
+import { hapticConnectSuccess, hapticDisconnect, hapticError } from "@/lib/haptics";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Text, View } from "react-native";
+import Animated, {
+    useAnimatedStyle,
+    useSharedValue,
+    withSpring,
+} from "react-native-reanimated";
 
 interface WalletButtonProps {
   onConnectSuccess?: (address: string) => void;
@@ -17,12 +26,35 @@ export function WalletButton({
 }: WalletButtonProps) {
   const { address, isConnected, isLoading, error, connect, disconnect } =
     useWallet();
+  const [justConnected, setJustConnected] = useState(false);
+
+  // Animated green glow after connect
+  const glowOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (justConnected) {
+      glowOpacity.value = withSpring(1, SPRING.default);
+      const timer = setTimeout(() => {
+        glowOpacity.value = withSpring(0, SPRING.gentle);
+        setJustConnected(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [justConnected]);
+
+  const glowStyle = useAnimatedStyle(() => ({
+    borderColor: `rgba(0, 255, 0, ${glowOpacity.value * 0.6})`,
+    borderWidth: glowOpacity.value > 0.01 ? 2 : 1,
+  }));
 
   const handleConnect = async () => {
     try {
       const addr = await connect();
+      await hapticConnectSuccess();
+      setJustConnected(true);
       onConnectSuccess?.(addr);
     } catch (err) {
+      await hapticError();
       console.error("[WalletButton] Connect error:", err);
     }
   };
@@ -30,8 +62,10 @@ export function WalletButton({
   const handleDisconnect = async () => {
     try {
       await disconnect();
+      await hapticDisconnect();
       onDisconnectSuccess?.();
     } catch (err) {
+      await hapticError();
       console.error("[WalletButton] Disconnect error:", err);
     }
   };
@@ -47,29 +81,31 @@ export function WalletButton({
 
   if (!isConnected) {
     return (
-      <Pressable
+      <AnimatedPressable
         onPress={handleConnect}
-        style={[styles.button, styles.connectButton]}
+        style={{ ...styles.button, ...styles.connectButton }}
       >
         <Text style={styles.buttonText}>Connect Solana Wallet</Text>
-      </Pressable>
+      </AnimatedPressable>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.connectedInfo}>
-        <Text style={styles.label}>Connected Wallet</Text>
-        <Text style={styles.address}>{address}</Text>
+    <SuccessPopView trigger={justConnected}>
+      <View style={styles.container}>
+        <Animated.View style={[styles.connectedInfo, glowStyle]}>
+          <Text style={styles.label}>Connected Wallet</Text>
+          <Text style={styles.address}>{address}</Text>
+        </Animated.View>
+        <AnimatedPressable
+          onPress={handleDisconnect}
+          style={{ ...styles.button, ...styles.disconnectButton }}
+        >
+          <Text style={styles.buttonText}>Disconnect</Text>
+        </AnimatedPressable>
+        {error && <Text style={styles.error}>{error}</Text>}
       </View>
-      <Pressable
-        onPress={handleDisconnect}
-        style={[styles.button, styles.disconnectButton]}
-      >
-        <Text style={styles.buttonText}>Disconnect</Text>
-      </Pressable>
-      {error && <Text style={styles.error}>{error}</Text>}
-    </View>
+    </SuccessPopView>
   );
 }
 
@@ -99,6 +135,8 @@ const styles = {
     borderRadius: 12,
     padding: 12,
     gap: 4,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
   label: {
     fontSize: 12,

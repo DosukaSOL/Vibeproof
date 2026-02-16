@@ -10,7 +10,6 @@ import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
-    Pressable,
     RefreshControl,
     ScrollView,
     Text,
@@ -58,6 +57,7 @@ export default function ProfileScreen() {
     try {
       setIsSaving(true);
       await setUsername(trimmed);
+      await hapticSuccess();
       Alert.alert("Success", "Username updated!");
     } catch (err: any) {
       Alert.alert("Error", err?.message || "Failed to update username");
@@ -82,20 +82,24 @@ export default function ProfileScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
       }
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>Profile</Text>
-        <Text style={styles.subtitle}>Your Web3 Identity</Text>
-      </View>
+      <FadeInView index={0}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Profile</Text>
+          <Text style={styles.subtitle}>Your Web3 Identity</Text>
+        </View>
+      </FadeInView>
 
       {/* Wallet Section */}
-      <WalletButton
-        onConnectSuccess={() => {
-          Alert.alert("Success", "Wallet connected!");
-        }}
-        onDisconnectSuccess={() => {
-          Alert.alert("Disconnected", "Wallet cleared.");
-        }}
-      />
+      <FadeInView index={1}>
+        <WalletButton
+          onConnectSuccess={() => {
+            Alert.alert("Success", "Wallet connected!");
+          }}
+          onDisconnectSuccess={() => {
+            Alert.alert("Disconnected", "Wallet cleared.");
+          }}
+        />
+      </FadeInView>
 
       {error && (
         <View style={styles.errorBox}>
@@ -104,47 +108,56 @@ export default function ProfileScreen() {
       )}
 
       {/* Stats Section */}
-      <StatsPanel user={user} isLoading={isLoading} />
+      <FadeInView index={2}>
+        <StatsPanel user={user} isLoading={isLoading} />
+      </FadeInView>
 
       {/* Username Section */}
       {isConnected && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Username</Text>
-          <TextInput
-            value={newUsername}
-            onChangeText={setNewUsername}
-            placeholder="Enter your username"
-            maxLength={20}
-            editable={!isSaving}
-            style={styles.input}
-            placeholderTextColor="#999"
-          />
-          <Text style={styles.charCounter}>
-            {newUsername.length}/20 characters
-          </Text>
+        <FadeInView index={3}>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Username</Text>
+            <TextInput
+              value={newUsername}
+              onChangeText={setNewUsername}
+              placeholder="Enter your username"
+              maxLength={20}
+              editable={!isSaving}
+              style={styles.input}
+              placeholderTextColor="#999"
+            />
+            <Text style={styles.charCounter}>
+              {newUsername.length}/20 characters
+            </Text>
 
-          <Pressable
-            onPress={handleSaveUsername}
-            disabled={isSaving || !newUsername.trim()}
-            style={[styles.button, isSaving && styles.buttonDisabled]}
-          >
-            {isSaving ? (
-              <ActivityIndicator size="small" color="white" />
-            ) : (
-              <Text style={styles.buttonText}>Save Username</Text>
-            )}
-          </Pressable>
-        </View>
+            <AnimatedPressable
+              onPress={handleSaveUsername}
+              disabled={isSaving || !newUsername.trim()}
+              style={{
+                ...styles.button,
+                ...(isSaving ? styles.buttonDisabled : {}),
+              }}
+            >
+              {isSaving ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text style={styles.buttonText}>Save Username</Text>
+              )}
+            </AnimatedPressable>
+          </View>
+        </FadeInView>
       )}
 
       {/* Info Section */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>About</Text>
-        <Text style={styles.infoText}>
-          VibeProof is a proof-of-action gaming platform on Solana. Complete
-          missions, earn XP, and climb the leaderboard!
-        </Text>
-      </View>
+      <FadeInView index={4}>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>About</Text>
+          <Text style={styles.infoText}>
+            VibeProof is a proof-of-action gaming platform on Solana. Complete
+            missions, earn XP, and climb the leaderboard!
+          </Text>
+        </View>
+      </FadeInView>
     </ScrollView>
   );
 }
