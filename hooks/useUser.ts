@@ -1,17 +1,18 @@
 /**
  * useUser Hook
- * Manages user profile and auth state
+ * Manages user profile using local storage (offline-first).
+ * Optionally syncs to Supabase in background.
  */
 import {
-    DbUser,
-    getUser,
-    isUsernameAvailable,
-    updateUsername,
-} from "@/lib/supabase";
+    createLocalUser,
+    getLocalUser,
+    LocalUser,
+    updateLocalUsername,
+} from "@/lib/localStore";
 import { useCallback, useEffect, useState } from "react";
 
 export interface UserState {
-  user: DbUser | null;
+  user: LocalUser | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -35,13 +36,16 @@ export function useUser(walletAddress: string | null) {
     (async () => {
       try {
         setState((prev) => ({ ...prev, isLoading: true, error: null }));
-
-        const userData = await getUser(walletAddress);
+        // Get or create local user
+        const userData = await createLocalUser(walletAddress);
         setState((prev) => ({
           ...prev,
           user: userData,
           isLoading: false,
         }));
+
+        // Try Supabase sync in background (non-blocking)
+        trySyncToSupabase(walletAddress, userData);
       } catch (error: any) {
         const message = error?.message || "Failed to load user";
         setState((prev) => ({
@@ -64,14 +68,12 @@ export function useUser(walletAddress: string | null) {
 
       try {
         setState((prev) => ({ ...prev, isLoading: true, error: null }));
-
-        const updated = await updateUsername(walletAddress, newUsername);
+        const updated = await updateLocalUsername(walletAddress, newUsername);
         setState((prev) => ({
           ...prev,
           user: updated,
           isLoading: false,
         }));
-
         return updated;
       } catch (error: any) {
         const message = error?.message || "Failed to update username";
@@ -87,29 +89,14 @@ export function useUser(walletAddress: string | null) {
   );
 
   /**
-   * Check if username is available
-   */
-  const checkUsernameAvailable = useCallback(
-    async (username: string) => {
-      try {
-        return await isUsernameAvailable(username);
-      } catch (error) {
-        console.error("[useUser] Username check error:", error);
-        return false;
-      }
-    },
-    []
-  );
-
-  /**
-   * Refresh user data
+   * Refresh user data from local store
    */
   const refresh = useCallback(async () => {
     if (!walletAddress) return;
 
     try {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
-      const userData = await getUser(walletAddress);
+      const userData = await getLocalUser(walletAddress);
       setState((prev) => ({
         ...prev,
         user: userData,
@@ -130,7 +117,28 @@ export function useUser(walletAddress: string | null) {
     isLoading: state.isLoading,
     error: state.error,
     setUsername,
-    checkUsernameAvailable,
     refresh,
   };
+}
+
+/**
+ * Try to sync local user to Supabase in background.
+ * Non-blocking, never throws.
+ */
+async function trySyncToSupabase(wallet: string, user: LocalUser) {
+  try {
+    const { supabase } = require("@/lib/supabase");
+    await supabase.from("users").upsert(
+      {
+        wallet,
+        username: user.username || null,
+        xp: user.xp,
+        streak: user.streak,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "wallet" }
+    );
+  } catch {
+    // Supabase not available — that's fine, local data is the source of truth
+  }
 }

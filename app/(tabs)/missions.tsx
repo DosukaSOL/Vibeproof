@@ -82,7 +82,7 @@ export default function MissionsScreen() {
             ...styles.tabText,
             ...(isRepeatable ? styles.tabTextActive : {}),
           }}>
-            Repeatable ({repeatableCount})
+            Daily ({repeatableCount})
           </Text>
         </AnimatedPressable>
         <AnimatedPressable

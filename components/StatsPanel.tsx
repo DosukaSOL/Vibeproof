@@ -2,12 +2,12 @@
  * StatsPanel Component
  * Display user stats and progression
  */
-import { DbUser } from "@/lib/supabase";
+import { LocalUser } from "@/lib/localStore";
 import React from "react";
 import { Text, View } from "react-native";
 
 interface StatsPanelProps {
-  user: DbUser | null;
+  user: LocalUser | null;
   isLoading?: boolean;
 }
 
@@ -22,8 +22,6 @@ export function StatsPanel({ user, isLoading }: StatsPanelProps) {
     );
   }
 
-  const calculatedLevel = Math.floor(user.xp / 1000) + 1;
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Your Stats</Text>
@@ -31,12 +29,13 @@ export function StatsPanel({ user, isLoading }: StatsPanelProps) {
       <View style={styles.gridContainer}>
         <StatItem
           label="Level"
-          value={calculatedLevel.toString()}
+          value={user.level.toString()}
           icon="📈"
         />
         <StatItem label="XP" value={user.xp.toString()} icon="⭐" />
         <StatItem label="Rank" value={`#${user.rank}`} icon="🏆" />
         <StatItem label="Streak" value={user.streak.toString()} icon="🔥" />
+        <StatItem label="Missions" value={user.missionsCompleted.toString()} icon="🎯" />
       </View>
     </View>
   );
