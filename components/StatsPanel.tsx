@@ -78,7 +78,7 @@ const styles = {
   },
   statItem: {
     flex: 1,
-    minWidth: "45%",
+    minWidth: "45%" as any,
     backgroundColor: "white",
     borderRadius: 10,
     padding: 12,

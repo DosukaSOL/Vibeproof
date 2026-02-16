@@ -107,7 +107,7 @@ export default function MissionsScreen() {
 
 const styles = {
   container: {
-    minHeight: "100%",
+    minHeight: "100%" as any,
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
