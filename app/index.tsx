@@ -26,6 +26,24 @@ export default function SplashScreen() {
   const screenOpacity = useSharedValue(1);
   const soundRef = useRef<Audio.Sound | null>(null);
 
+  // ALL hooks must be called unconditionally, BEFORE any early return
+  const logoAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: logoOpacity.value,
+    transform: [
+      { scale: logoScale.value * pulseScale.value },
+      { rotate: `${logoRotate.value}deg` },
+    ],
+  }));
+
+  const textAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: textOpacity.value,
+    transform: [{ translateY: textTranslateY.value }],
+  }));
+
+  const screenAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: screenOpacity.value,
+  }));
+
   useEffect(() => {
     // Play chime
     (async () => {
@@ -65,7 +83,7 @@ export default function SplashScreen() {
 
     screenOpacity.value = withDelay(2000, withTiming(0, { duration: 400 }));
 
-    // Navigate using state → Redirect (safe, no crash)
+    // Navigate after animation completes
     const timer = setTimeout(() => setDone(true), 2500);
     return () => {
       clearTimeout(timer);
@@ -73,27 +91,10 @@ export default function SplashScreen() {
     };
   }, []);
 
-  // Declarative navigation — bulletproof
+  // Declarative navigation — AFTER all hooks
   if (done) {
     return <Redirect href="/(tabs)/profile" />;
   }
-
-  const logoAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: logoOpacity.value,
-    transform: [
-      { scale: logoScale.value * pulseScale.value },
-      { rotate: `${logoRotate.value}deg` },
-    ],
-  }));
-
-  const textAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: textOpacity.value,
-    transform: [{ translateY: textTranslateY.value }],
-  }));
-
-  const screenAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: screenOpacity.value,
-  }));
 
   return (
     <Animated.View style={[styles.container, screenAnimatedStyle]}>
