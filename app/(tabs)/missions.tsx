@@ -77,7 +77,7 @@ export default function MissionsScreen() {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#7C3AED" />
+          <ActivityIndicator size="large" color="#00FF00" />
           <Text style={styles.loadingText}>Loading missions...</Text>
         </View>
       ) : missions.length === 0 ? (

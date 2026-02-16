@@ -169,13 +169,13 @@ const styles = {
   xpReward: {
     fontSize: 13,
     fontWeight: "700" as const,
-    color: "#7C3AED",
+    color: "#00FF00",
   },
   submitButton: {
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#00FF00",
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 16,
   },
   submitButtonText: {
     color: "white",
@@ -199,10 +199,10 @@ const styles = {
     color: "#000",
   },
   confirmButton: {
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#00FF00",
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 16,
     minWidth: 60,
     alignItems: "center" as const,
   },

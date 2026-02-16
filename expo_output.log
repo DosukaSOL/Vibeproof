@@ -1,0 +1,16 @@
+env: load .env.local .env
+env: export EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_ANON_KEY
+Starting project at /Users/lorenzogijsbertha/projects/vibeproof
+React Compiler enabled
+Starting Metro Bundler
+warning: Bundler cache is empty, rebuilding (this may take a minute)
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+Web ./index.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+λ Bundled 1850ms node_modules/expo-router/node/render.js (901 modules)
+(node:50691) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ WARN  Attempted to import the module "/Users/lorenzogijsbertha/projects/vibeproof/node_modules/@noble/hashes/crypto.js" which is not listed in the "exports" of "/Users/lorenzogijsbertha/projects/vibeproof/node_modules/@noble/hashes" under the requested subpath "./crypto.js". Falling back to file-based resolution. Consider updating the call site or asking the package maintainer(s) to expose this API.
+Web Bundled 2177ms index.js (858 modules)
+Web Bundled 934ms index.js (883 modules)
+ LOG  [web] Logs will appear in the browser console

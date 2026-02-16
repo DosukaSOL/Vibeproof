@@ -195,9 +195,9 @@ const styles = {
     color: "#999",
   },
   button: {
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#00FF00",
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 20,
     alignItems: "center" as const,
     marginTop: 4,
   },

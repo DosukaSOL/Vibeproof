@@ -80,11 +80,11 @@ const styles = {
   button: {
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 20,
     alignItems: "center" as const,
   },
   connectButton: {
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#00FF00",
   },
   disconnectButton: {
     backgroundColor: "#EF4444",

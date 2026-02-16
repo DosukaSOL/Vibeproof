@@ -91,7 +91,7 @@ export default function LeaderboardScreen() {
 
       {isLoading && users.length === 0 ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#7C3AED" />
+          <ActivityIndicator size="large" color="#00FF00" />
           <Text style={styles.loadingText}>Loading leaderboard...</Text>
         </View>
       ) : users.length === 0 ? (
@@ -121,7 +121,7 @@ export default function LeaderboardScreen() {
 
       {shouldShowLoadMore && (
         <View style={styles.loadMoreContainer}>
-          <ActivityIndicator size="small" color="#7C3AED" />
+          <ActivityIndicator size="small" color="#00FF00" />
           <Text style={styles.loadMoreText}>Loading more...</Text>
         </View>
       )}
@@ -195,7 +195,7 @@ const styles = {
   rank: {
     fontSize: 14,
     fontWeight: "700" as const,
-    color: "#7C3AED",
+    color: "#00FF00",
   },
   userInfo: {
     flex: 1,
