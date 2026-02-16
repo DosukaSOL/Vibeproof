@@ -18,8 +18,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_SUPABASE_URL": "https://hqulqlspdzzppwsvduhc.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcGp4bHZ3cWRieHRibWJkYXJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk3ODk5MjAsImV4cCI6MjA1NTM2NTkyMH0.xM9a7MiHINMXhN_oHUUvU2CzVqYUSVXZ95kNcKfXlCQ",
+        "EXPO_PUBLIC_SUPABASE_URL": "YOUR_SUPABASE_URL",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "YOUR_SUPABASE_ANON_KEY",
         "EXPO_PUBLIC_SOLANA_CLUSTER": "mainnet-beta"
       }
     },
