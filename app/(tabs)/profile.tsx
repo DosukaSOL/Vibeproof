@@ -3,6 +3,7 @@
  * User identity, wallet, and stats
  */
 import { AnimatedPressable } from "@/components/AnimatedPressable";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { FadeInView } from "@/components/FadeInView";
 import { StatsPanel } from "@/components/StatsPanel";
 import { WalletButton } from "@/components/WalletButton";
@@ -83,7 +84,8 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView
+    <ErrorBoundary>
+      <ScrollView
       contentContainerStyle={styles.container}
       refreshControl={
         <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={T.accent} colors={[T.accent]} progressBackgroundColor={T.surface} />
@@ -173,6 +175,7 @@ export default function ProfileScreen() {
         </View>
       </FadeInView>
     </ScrollView>
+    </ErrorBoundary>
   );
 }
 

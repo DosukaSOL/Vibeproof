@@ -9,7 +9,11 @@ import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useState } from "react";
 
 // Required for expo-auth-session
-WebBrowser.maybeCompleteAuthSession();
+try {
+  WebBrowser.maybeCompleteAuthSession();
+} catch (e) {
+  console.warn("[useXLink] maybeCompleteAuthSession failed:", e);
+}
 
 // X OAuth 2.0 endpoints
 const discovery: AuthSession.DiscoveryDocument = {

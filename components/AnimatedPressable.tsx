@@ -1,6 +1,8 @@
 /**
  * AnimatedPressable Component
- * Button with scale + opacity press animation and haptics
+ * Button with scale + opacity press animation and haptics.
+ * Uses Animated.View wrapper (not createAnimatedComponent) for
+ * maximum compatibility with New Architecture + Reanimated 4.
  */
 import { SPRING } from "@/lib/animations";
 import { hapticLight } from "@/lib/haptics";
@@ -11,8 +13,6 @@ import Animated, {
     useSharedValue,
     withSpring,
 } from "react-native-reanimated";
-
-const AnimatedPressableBase = Animated.createAnimatedComponent(Pressable);
 
 interface AnimatedPressableProps extends PressableProps {
   style?: ViewStyle | ViewStyle[];
@@ -40,23 +40,24 @@ export function AnimatedPressable({
   }));
 
   return (
-    <AnimatedPressableBase
-      {...rest}
-      style={[animatedStyle, style]}
-      onPressIn={(e) => {
-        scale.value = withSpring(scaleDown, SPRING.snappy);
-        opacity.value = withSpring(0.9, SPRING.snappy);
-        if (enableHaptics) hapticLight();
-        onPressIn?.(e);
-      }}
-      onPressOut={(e) => {
-        scale.value = withSpring(1, SPRING.default);
-        opacity.value = withSpring(1, SPRING.default);
-        onPressOut?.(e);
-      }}
-      onPress={onPress}
-    >
-      {children}
-    </AnimatedPressableBase>
+    <Animated.View style={[animatedStyle, style]}>
+      <Pressable
+        {...rest}
+        onPressIn={(e) => {
+          scale.value = withSpring(scaleDown, SPRING.snappy);
+          opacity.value = withSpring(0.9, SPRING.snappy);
+          if (enableHaptics) hapticLight();
+          onPressIn?.(e);
+        }}
+        onPressOut={(e) => {
+          scale.value = withSpring(1, SPRING.default);
+          opacity.value = withSpring(1, SPRING.default);
+          onPressOut?.(e);
+        }}
+        onPress={onPress}
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
   );
 }

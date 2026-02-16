@@ -1,5 +1,5 @@
 import { Audio } from "expo-av";
-import { Redirect } from "expo-router";
+import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
     Animated,
@@ -117,8 +117,24 @@ export default function SplashScreen() {
     };
   }, []);
 
+  // Navigate via useEffect — runs AFTER mount, after navigation context is ready
+  useEffect(() => {
+    if (done) {
+      try {
+        router.replace("/(tabs)/profile");
+      } catch (e) {
+        console.error("[Splash] Navigation failed:", e);
+        // Retry once after a short delay
+        setTimeout(() => {
+          try { router.replace("/(tabs)/profile"); } catch {}
+        }, 500);
+      }
+    }
+  }, [done]);
+
   if (done) {
-    return <Redirect href="/(tabs)/profile" />;
+    // Show blank dark screen while router.replace is processing
+    return <View style={styles.container} />;
   }
 
   const rotateInterp = logoRotate.interpolate({
