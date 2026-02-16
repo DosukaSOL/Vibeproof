@@ -2,6 +2,9 @@
  * MissionCard Component
  * Display individual mission with animations + haptics
  */
+import { AnimatedPressable } from "@/components/AnimatedPressable";
+import { SPRING } from "@/lib/animations";
+import { hapticError, hapticXpGained } from "@/lib/haptics";
 import { DbMission } from "@/lib/supabase";
 import React, { useState } from "react";
 import {
@@ -11,6 +14,12 @@ import {
     TextInput,
     View,
 } from "react-native";
+import Animated, {
+    useAnimatedStyle,
+    useSharedValue,
+    withSequence,
+    withSpring,
+} from "react-native-reanimated";
 
 interface MissionCardProps {
   mission: DbMission;
