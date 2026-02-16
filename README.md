@@ -6,15 +6,15 @@
 
 ## 🎯 What is VibeProof?
 
-**VibeProof** is a **proof-of-action gaming platform** that turns real-world actions into digital rewards on Solana.
+**VibeProof** is a **proof-of-action gaming platform** built for the **Solana Seeker phone** dApp store that turns real-world actions into digital rewards on Solana.
 
-Instead of endless scrolling and empty engagement metrics, VibeProof users:
+Available exclusively on Solana Seeker, VibeProof users:
 - **Connect their Solana wallet** (via Seeker)
 - **Complete verified missions** (follow, post, join, verify)
 - **Earn real XP and climb the leaderboard**
 - **Build an on-chain reputation**
 
-Think of it as: **LinkedIn meets gaming, powered by Solana.**
+Think of it as: **LinkedIn meets gaming, powered by Solana—built for Seeker phone users.**
 
 ---
 
@@ -23,6 +23,20 @@ Think of it as: **LinkedIn meets gaming, powered by Solana.**
 **Problem:** Digital platforms reward attention, not action. Social tokens and Web3 apps have no standardized way to verify that users actually did something.
 
 **Solution:** VibeProof becomes the **proof-of-action layer** for Solana. Every mission completed is a verified action. Every XP earned is real. Every person on the leaderboard proved they showed up.
+
+---
+
+## 📱 Solana Seeker Phone App
+
+**VibeProof is built exclusively for the Solana Seeker phone.**
+
+Available in the Seeker dApp store, VibeProof leverages the Seeker phone's native Solana integration for seamless wallet authentication and transaction handling. No bridging, no friction—just pure Web3 gaming on purpose-built hardware.
+
+**Why Seeker?**
+- Native Solana integration
+- Seeker community of Web3 natives
+- One-tap wallet authentication
+- True mobile-first Web3 experience
 
 ---
 
@@ -162,9 +176,7 @@ Think of it as: **LinkedIn meets gaming, powered by Solana.**
 
 ## 📞 Contact
 
-- **Twitter:** [@vibeproof](https://twitter.com/vibeproof)
-- **GitHub:** [@DosukaSOL/Vibeproof](https://github.com/DosukaSOL/Vibeproof)
-- **Email:** dosukasol@vibeproof.app
+- **X:** [@DosukaSOL](https://twitter.com/DosukaSOL)
 
 ---
 
