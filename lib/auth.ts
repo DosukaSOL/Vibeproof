@@ -4,7 +4,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const SESSION_KEY = "vibeproof_session";
-const WALLET_KEY = "vibeproof_wallet";
 
 export type Session = {
   walletAddress: string;
@@ -17,10 +16,8 @@ export type Session = {
  */
 export async function saveSession(session: Session): Promise<void> {
   try {
-    // Store wallet in regular storage for quick access
-    await AsyncStorage.setItem(WALLET_KEY, session.walletAddress);
-    // Store full session in secure storage
-    await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(session));
+    // Store session in AsyncStorage (compatible with all platforms)
+    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(session));
   } catch (error) {
     console.error("[Auth] Failed to save session:", error);
     throw error;
@@ -44,12 +41,12 @@ export async function loadSession(): Promise<Session | null> {
 }
 
 /**
- * Get wallet address without full session
+ * Get wallet address from stored session
  */
 export async function getStoredWallet(): Promise<string | null> {
   try {
-    const wallet = await AsyncStorage.getItem(WALLET_KEY);
-    return wallet;
+    const session = await loadSession();
+    return session?.walletAddress || null;
   } catch (error) {
     console.error("[Auth] Failed to get wallet:", error);
     return null;
