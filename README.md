@@ -163,14 +163,31 @@ Available in the Seeker dApp store, VibeProof leverages the Seeker phone's nativ
 
 ## 🎯 Current Status
 
-✅ **Production-ready mobile app**  
-✅ **Solana wallet integration (Seeker)**  
-✅ **Mission system with XP rewards**  
-✅ **Real-time leaderboard**  
-✅ **Supabase backend with RLS security**  
-✅ **iOS & Android build ready**  
+### v1.0.0 — First Stable Release (February 16, 2026)
 
-🚀 **Ready to launch. Raising/deploying next.**
+This is the **first fully working production build** of VibeProof. After extensive development and testing across multiple pre-release iterations, v1.0.0 is the official baseline release.
+
+**Download:** [`builds/v1.0.0.apk`](builds/v1.0.0.apk) (Android / Solana Seeker)
+
+**What's in v1.0.0:**
+- Splash screen with animated logo and chime sound
+- Solana wallet connect via Seeker Mobile Wallet Adapter
+- Mission system with XP rewards
+- Real-time leaderboard
+- X (Twitter) account linking with PKCE OAuth
+- User profile with stats and streaks
+- Supabase backend with Row Level Security
+- Lazy module loading for rock-solid stability on Android
+- Global error handling to prevent silent crashes
+
+✅ Production-ready  
+✅ Solana wallet integration (Seeker)  
+✅ Mission system with XP rewards  
+✅ Real-time leaderboard  
+✅ Supabase backend with RLS security  
+✅ Android APK build ready  
+
+🚀 **Live and stable. Building forward from here.**
 
 ---
 
