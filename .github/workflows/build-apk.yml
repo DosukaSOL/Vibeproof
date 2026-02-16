@@ -41,9 +41,9 @@ jobs:
       - name: Generate native Android project
         run: npx expo prebuild --platform android --clean --no-install
         env:
-          EXPO_PUBLIC_SUPABASE_URL: https://hqulqlspdzzppwsvduhc.supabase.co
-          EXPO_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcGp4bHZ3cWRieHRibWJkYXJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk3ODk5MjAsImV4cCI6MjA1NTM2NTkyMH0.xM9a7MiHINMXhN_oHUUvU2CzVqYUSVXZ95kNcKfXlCQ
-          EXPO_PUBLIC_SOLANA_CLUSTER: mainnet-beta
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://hqulqlspdzzppwsvduhc.supabase.co' }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcGp4bHZ3cWRieHRibWJkYXJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk3ODk5MjAsImV4cCI6MjA1NTM2NTkyMH0.xM9a7MiHINMXhN_oHUUvU2CzVqYUSVXZ95kNcKfXlCQ' }}
+          EXPO_PUBLIC_SOLANA_CLUSTER: ${{ secrets.SOLANA_CLUSTER || 'mainnet-beta' }}
 
       - name: Set Gradle memory
         run: |
@@ -55,9 +55,9 @@ jobs:
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon --stacktrace
         env:
-          EXPO_PUBLIC_SUPABASE_URL: https://hqulqlspdzzppwsvduhc.supabase.co
-          EXPO_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcGp4bHZ3cWRieHRibWJkYXJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk3ODk5MjAsImV4cCI6MjA1NTM2NTkyMH0.xM9a7MiHINMXhN_oHUUvU2CzVqYUSVXZ95kNcKfXlCQ
-          EXPO_PUBLIC_SOLANA_CLUSTER: mainnet-beta
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://hqulqlspdzzppwsvduhc.supabase.co' }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcGp4bHZ3cWRieHRibWJkYXJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk3ODk5MjAsImV4cCI6MjA1NTM2NTkyMH0.xM9a7MiHINMXhN_oHUUvU2CzVqYUSVXZ95kNcKfXlCQ' }}
+          EXPO_PUBLIC_SOLANA_CLUSTER: ${{ secrets.SOLANA_CLUSTER || 'mainnet-beta' }}
 
       - name: Find APK
         run: find android/app/build/outputs -name "*.apk" -type f 2>/dev/null | head -5
