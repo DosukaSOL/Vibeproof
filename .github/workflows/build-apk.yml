@@ -45,23 +45,50 @@ jobs:
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY' }}
           EXPO_PUBLIC_SOLANA_CLUSTER: ${{ secrets.SOLANA_CLUSTER || 'mainnet-beta' }}
 
-      - name: Set Gradle memory and bundle config
+      - name: Configure Gradle and enable JS bundling
         run: |
+          # Gradle performance settings
           echo "org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m" >> android/gradle.properties
           echo "org.gradle.daemon=true" >> android/gradle.properties
           echo "org.gradle.parallel=true" >> android/gradle.properties
-          echo "bundleInDebug=true" >> android/gradle.properties
+
+          # CRITICAL: React Native Gradle Plugin skips JS bundling for debug builds by default.
+          # The default debuggableVariants = ["debug"] means assembleDebug produces an APK
+          # with NO JavaScript bundle inside. Setting debuggableVariants = [] forces the
+          # plugin to bundle JS for ALL variants, including debug.
+          sed -i '/bundleCommand = "export:embed"/a\    debuggableVariants = []' android/app/build.gradle
+
+          # Verify the patch was applied
+          echo "--- Verifying debuggableVariants patch ---"
+          grep -n "debuggableVariants" android/app/build.gradle
+          if ! grep -q 'debuggableVariants = \[\]' android/app/build.gradle; then
+            echo "ERROR: Failed to patch debuggableVariants!"
+            exit 1
+          fi
+          echo "✅ debuggableVariants = [] successfully injected"
 
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon --stacktrace
         env:
+          NODE_ENV: production
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'YOUR_SUPABASE_URL' }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY' }}
           EXPO_PUBLIC_SOLANA_CLUSTER: ${{ secrets.SOLANA_CLUSTER || 'mainnet-beta' }}
 
-      - name: Find APK
-        run: find android/app/build/outputs -name "*.apk" -type f 2>/dev/null | head -5
+      - name: Verify APK contains JS bundle
+        run: |
+          APK_PATH="android/app/build/outputs/apk/debug/app-debug.apk"
+          echo "--- APK contents (assets) ---"
+          unzip -l "$APK_PATH" | grep -i "assets/" | head -20
+          if unzip -l "$APK_PATH" | grep -q "index.android.bundle"; then
+            echo "✅ JS bundle (index.android.bundle) found in APK"
+          else
+            echo "❌ FATAL: JS bundle NOT found in APK!"
+            echo "--- Full APK contents ---"
+            unzip -l "$APK_PATH"
+            exit 1
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
