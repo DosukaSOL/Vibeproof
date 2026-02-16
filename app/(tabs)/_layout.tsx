@@ -19,7 +19,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="missions" options={{ title: "Missions", headerTitle: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Image 
-            source={require('@/assets/images/logo.png')}
+            source={require('@/assets/noble.png')}
             style={{ width: 40, height: 40, resizeMode: 'contain' }}
           />
         </View>
@@ -27,7 +27,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="profile" options={{ title: "Profile", headerTitle: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Image 
-            source={require('@/assets/images/logo.png')}
+            source={require('@/assets/noble.png')}
             style={{ width: 40, height: 40, resizeMode: 'contain' }}
           />
         </View>
@@ -35,7 +35,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="leaderboard" options={{ title: "Leaderboard", headerTitle: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Image 
-            source={require('@/assets/images/logo.png')}
+            source={require('@/assets/noble.png')}
             style={{ width: 40, height: 40, resizeMode: 'contain' }}
           />
         </View>
