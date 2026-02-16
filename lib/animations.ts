@@ -1,8 +1,10 @@
 /**
  * Animation Constants & Utilities
  * Shared timings, easings, and animation presets for VibeProof
+ *
+ * Uses plain React Native Animated API — NO Reanimated worklets.
  */
-import { Easing } from "react-native-reanimated";
+import { Easing } from "react-native";
 
 // ─── Durations ───────────────────────────────────────
 export const DURATION = {

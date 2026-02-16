@@ -1,6 +1,7 @@
 /**
  * WalletButton Component
- * Display and control wallet connection with animations + haptics
+ * Display and control wallet connection with animations + haptics.
+ * Uses plain React Native Animated API — NO Reanimated worklets.
  */
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { SuccessPopView } from "@/components/SuccessPopView";
@@ -8,13 +9,8 @@ import { useWallet } from "@/hooks/useWallet";
 import { SPRING } from "@/lib/animations";
 import { hapticConnectSuccess, hapticDisconnect, hapticError } from "@/lib/haptics";
 import { T } from "@/lib/theme";
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
-import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring,
-} from "react-native-reanimated";
+import React, { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Animated, Text, View } from "react-native";
 
 interface WalletButtonProps {
   onConnectSuccess?: (address: string) => void;
@@ -30,25 +26,35 @@ export function WalletButton({
   const [justConnected, setJustConnected] = useState(false);
 
   // Animated green glow after connect
-  const glowOpacity = useSharedValue(0);
+  const glowOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (justConnected) {
-      glowOpacity.value = withSpring(1, SPRING.default);
+      Animated.spring(glowOpacity, {
+        toValue: 1,
+        ...SPRING.default,
+        useNativeDriver: false, // borderColor can't use native driver
+      }).start();
       const timer = setTimeout(() => {
-        glowOpacity.value = withSpring(0, SPRING.gentle);
+        Animated.spring(glowOpacity, {
+          toValue: 0,
+          ...SPRING.gentle,
+          useNativeDriver: false,
+        }).start();
         setJustConnected(false);
       }, 2000);
       return () => clearTimeout(timer);
     }
   }, [justConnected]);
 
-  const glowStyle = useAnimatedStyle(() => {
-    const a = glowOpacity.value * 0.7;
-    return {
-      borderColor: 'rgba(63,185,80,' + a + ')',
-      borderWidth: glowOpacity.value > 0.01 ? 2 : 1,
-    };
+  const glowBorderColor = glowOpacity.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["rgba(63,185,80,0)", "rgba(63,185,80,0.7)"],
+  });
+
+  const glowBorderWidth = glowOpacity.interpolate({
+    inputRange: [0, 0.01, 1],
+    outputRange: [1, 2, 2],
   });
 
   const handleConnect = async () => {
@@ -97,7 +103,12 @@ export function WalletButton({
   return (
     <SuccessPopView trigger={justConnected}>
       <View style={styles.container}>
-        <Animated.View style={[styles.connectedInfo, glowStyle]}>
+        <Animated.View
+          style={[
+            styles.connectedInfo,
+            { borderColor: glowBorderColor, borderWidth: glowBorderWidth },
+          ]}
+        >
           <Text style={styles.label}>Connected Wallet</Text>
           <Text style={styles.address}>{address}</Text>
         </Animated.View>

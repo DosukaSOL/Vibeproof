@@ -1,18 +1,12 @@
 /**
  * AnimatedPressable Component
  * Button with scale + opacity press animation and haptics.
- * Uses Animated.View wrapper (not createAnimatedComponent) for
- * maximum compatibility with New Architecture + Reanimated 4.
+ * Uses plain React Native Animated API — NO Reanimated worklets.
  */
 import { SPRING } from "@/lib/animations";
 import { hapticLight } from "@/lib/haptics";
-import React from "react";
-import { Pressable, PressableProps, ViewStyle } from "react-native";
-import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring,
-} from "react-native-reanimated";
+import React, { useRef } from "react";
+import { Animated, Pressable, PressableProps, ViewStyle } from "react-native";
 
 interface AnimatedPressableProps extends PressableProps {
   style?: ViewStyle | ViewStyle[];
@@ -31,27 +25,44 @@ export function AnimatedPressable({
   children,
   ...rest
 }: AnimatedPressableProps) {
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
+  const scale = useRef(new Animated.Value(1)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
 
   return (
-    <Animated.View style={[animatedStyle, style]}>
+    <Animated.View
+      style={[{ transform: [{ scale }], opacity }, style]}
+    >
       <Pressable
         {...rest}
         onPressIn={(e) => {
-          scale.value = withSpring(scaleDown, SPRING.snappy);
-          opacity.value = withSpring(0.9, SPRING.snappy);
+          Animated.parallel([
+            Animated.spring(scale, {
+              toValue: scaleDown,
+              ...SPRING.snappy,
+              useNativeDriver: true,
+            }),
+            Animated.spring(opacity, {
+              toValue: 0.9,
+              ...SPRING.snappy,
+              useNativeDriver: true,
+            }),
+          ]).start();
           if (enableHaptics) hapticLight();
           onPressIn?.(e);
         }}
         onPressOut={(e) => {
-          scale.value = withSpring(1, SPRING.default);
-          opacity.value = withSpring(1, SPRING.default);
+          Animated.parallel([
+            Animated.spring(scale, {
+              toValue: 1,
+              ...SPRING.default,
+              useNativeDriver: true,
+            }),
+            Animated.spring(opacity, {
+              toValue: 1,
+              ...SPRING.default,
+              useNativeDriver: true,
+            }),
+          ]).start();
           onPressOut?.(e);
         }}
         onPress={onPress}

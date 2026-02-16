@@ -1,15 +1,11 @@
 /**
  * SuccessPopView Component
- * Bouncy entrance animation for success states (XP gained, mission complete)
+ * Bouncy entrance animation for success states (XP gained, mission complete).
+ * Uses plain React Native Animated API — NO Reanimated worklets.
  */
 import { SPRING } from "@/lib/animations";
-import React, { useEffect } from "react";
-import { ViewStyle } from "react-native";
-import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring,
-} from "react-native-reanimated";
+import React, { useEffect, useRef } from "react";
+import { Animated, ViewStyle } from "react-native";
 
 interface SuccessPopViewProps {
   children: React.ReactNode;
@@ -22,22 +18,29 @@ export function SuccessPopView({
   trigger = true,
   style,
 }: SuccessPopViewProps) {
-  const scale = useSharedValue(trigger ? 0.6 : 1);
-  const opacity = useSharedValue(trigger ? 0 : 1);
+  const scale = useRef(new Animated.Value(trigger ? 0.6 : 1)).current;
+  const opacity = useRef(new Animated.Value(trigger ? 0 : 1)).current;
 
   useEffect(() => {
     if (trigger) {
-      scale.value = withSpring(1, SPRING.bouncy);
-      opacity.value = withSpring(1, SPRING.default);
+      Animated.parallel([
+        Animated.spring(scale, {
+          toValue: 1,
+          ...SPRING.bouncy,
+          useNativeDriver: true,
+        }),
+        Animated.spring(opacity, {
+          toValue: 1,
+          ...SPRING.default,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
   }, [trigger]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
-
   return (
-    <Animated.View style={[animatedStyle, style]}>{children}</Animated.View>
+    <Animated.View style={[{ transform: [{ scale }], opacity }, style]}>
+      {children}
+    </Animated.View>
   );
 }

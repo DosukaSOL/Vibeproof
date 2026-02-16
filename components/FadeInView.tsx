@@ -1,16 +1,11 @@
 /**
  * FadeInView Component
- * Wraps children with a staggered fade-in + slide-up animation
+ * Wraps children with a staggered fade-in + slide-up animation.
+ * Uses plain React Native Animated API — NO Reanimated worklets.
  */
 import { DURATION, EASING, getStaggerDelay } from "@/lib/animations";
-import React, { useEffect } from "react";
-import { ViewStyle } from "react-native";
-import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withDelay,
-    withTiming,
-} from "react-native-reanimated";
+import React, { useEffect, useRef } from "react";
+import { Animated, ViewStyle } from "react-native";
 
 interface FadeInViewProps {
   children: React.ReactNode;
@@ -29,28 +24,36 @@ export function FadeInView({
   translateY = 16,
   style,
 }: FadeInViewProps) {
-  const opacity = useSharedValue(0);
-  const offsetY = useSharedValue(translateY);
+  const opacity = useRef(new Animated.Value(0)).current;
+  const offsetY = useRef(new Animated.Value(translateY)).current;
 
   const totalDelay = delay + getStaggerDelay(index);
 
   useEffect(() => {
-    opacity.value = withDelay(
-      totalDelay,
-      withTiming(1, { duration, easing: EASING.enter })
-    );
-    offsetY.value = withDelay(
-      totalDelay,
-      withTiming(0, { duration, easing: EASING.enter })
-    );
+    const timer = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration,
+          easing: EASING.enter,
+          useNativeDriver: true,
+        }),
+        Animated.timing(offsetY, {
+          toValue: 0,
+          duration,
+          easing: EASING.enter,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, totalDelay);
+    return () => clearTimeout(timer);
   }, []);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: offsetY.value }],
-  }));
-
   return (
-    <Animated.View style={[animatedStyle, style]}>{children}</Animated.View>
+    <Animated.View
+      style={[{ opacity, transform: [{ translateY: offsetY }] }, style]}
+    >
+      {children}
+    </Animated.View>
   );
 }
