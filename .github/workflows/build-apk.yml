@@ -45,11 +45,12 @@ jobs:
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcGp4bHZ3cWRieHRibWJkYXJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk3ODk5MjAsImV4cCI6MjA1NTM2NTkyMH0.xM9a7MiHINMXhN_oHUUvU2CzVqYUSVXZ95kNcKfXlCQ' }}
           EXPO_PUBLIC_SOLANA_CLUSTER: ${{ secrets.SOLANA_CLUSTER || 'mainnet-beta' }}
 
-      - name: Set Gradle memory
+      - name: Set Gradle memory and bundle config
         run: |
           echo "org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m" >> android/gradle.properties
           echo "org.gradle.daemon=true" >> android/gradle.properties
           echo "org.gradle.parallel=true" >> android/gradle.properties
+          echo "bundleInDebug=true" >> android/gradle.properties
 
       - name: Build debug APK
         working-directory: android
