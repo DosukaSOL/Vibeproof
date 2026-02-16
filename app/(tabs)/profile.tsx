@@ -2,10 +2,13 @@
  * Profile Tab
  * User identity, wallet, and stats
  */
+import { AnimatedPressable } from "@/components/AnimatedPressable";
+import { FadeInView } from "@/components/FadeInView";
 import { StatsPanel } from "@/components/StatsPanel";
 import { WalletButton } from "@/components/WalletButton";
 import { useUser } from "@/hooks/useUser";
 import { useWallet } from "@/hooks/useWallet";
+import { hapticSuccess } from "@/lib/haptics";
 import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -22,6 +25,7 @@ export default function ProfileScreen() {
   const { user, isLoading, error, setUsername, refresh } = useUser(
     isConnected ? address : null
   );
+  const xLink = useXLink(isConnected ? address : null);
 
   const [newUsername, setNewUsername] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -112,9 +116,16 @@ export default function ProfileScreen() {
         <StatsPanel user={user} isLoading={isLoading} />
       </FadeInView>
 
-      {/* Username Section */}
+      {/* X Account Linking */}
       {isConnected && (
         <FadeInView index={3}>
+          <XLinkCard xLink={xLink} />
+        </FadeInView>
+      )}
+
+      {/* Username Section */}
+      {isConnected && (
+        <FadeInView index={4}>
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Username</Text>
             <TextInput
@@ -149,7 +160,7 @@ export default function ProfileScreen() {
       )}
 
       {/* Info Section */}
-      <FadeInView index={4}>
+      <FadeInView index={5}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>About</Text>
           <Text style={styles.infoText}>
