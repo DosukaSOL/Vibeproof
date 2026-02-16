@@ -1,6 +1,6 @@
 import { Link, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 import './App.css'
-import logo from './assets/logo.png'
+import noble from './assets/noble.png'
 import Leaderboard from './pages/Leaderboard'
 import Missions from './pages/Missions'
 import Profile from './pages/Profile'
@@ -10,7 +10,7 @@ export default function App() {
     <Router>
       <div className="app">
         <nav className="navbar">
-          <img src={logo} alt="VibeProof" className="logo" />
+          <img src={noble} alt="VibeProof" className="logo" />
           <div className="nav-links">
             <Link to="/">Profile</Link>
             <Link to="/missions">Missions</Link>
