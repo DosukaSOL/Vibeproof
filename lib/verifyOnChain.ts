@@ -4,6 +4,7 @@
  */
 import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { CONFIG } from "./config";
+import { normalizeAddress } from "./solana";
 
 // RPC connection (mainnet-beta by default)
 const RPC_URL =
@@ -29,7 +30,7 @@ export async function verifyRecentTransaction(
   windowHours = 24
 ): Promise<VerificationResult> {
   try {
-    const pubkey = new PublicKey(walletAddress);
+    const pubkey = new PublicKey(normalizeAddress(walletAddress));
     const signatures = await connection.getSignaturesForAddress(pubkey, {
       limit: 10,
     });
@@ -82,7 +83,7 @@ export async function verifyMinBalance(
   minBalance = 0.1
 ): Promise<VerificationResult> {
   try {
-    const pubkey = new PublicKey(walletAddress);
+    const pubkey = new PublicKey(normalizeAddress(walletAddress));
     const balance = await connection.getBalance(pubkey);
     const solBalance = balance / LAMPORTS_PER_SOL;
 
@@ -122,7 +123,7 @@ export async function verifyProgramInteraction(
   windowHours = 24
 ): Promise<VerificationResult> {
   try {
-    const pubkey = new PublicKey(walletAddress);
+    const pubkey = new PublicKey(normalizeAddress(walletAddress));
     const signatures = await connection.getSignaturesForAddress(pubkey, {
       limit: 50,
     });
@@ -181,7 +182,7 @@ export async function verifySelfTransfer(
   windowHours = 24
 ): Promise<VerificationResult> {
   try {
-    const pubkey = new PublicKey(walletAddress);
+    const pubkey = new PublicKey(normalizeAddress(walletAddress));
     const signatures = await connection.getSignaturesForAddress(pubkey, {
       limit: 20,
     });

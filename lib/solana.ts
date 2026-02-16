@@ -3,6 +3,8 @@
  * Handles wallet connections via Seeker
  */
 import { transact } from "@solana-mobile/mobile-wallet-adapter-protocol-web3js";
+import { PublicKey } from "@solana/web3.js";
+import { Buffer } from "buffer";
 import * as Linking from "expo-linking";
 import "react-native-get-random-values";
 import { CONFIG } from "./config";
@@ -14,15 +16,40 @@ export interface WalletConnectResult {
 }
 
 /**
+ * Normalize wallet address to base58.
+ * Seeker may return base64-encoded public key bytes instead of base58.
+ */
+export function normalizeAddress(address: string): string {
+  // Try base58 first
+  try {
+    const pk = new PublicKey(address);
+    return pk.toBase58();
+  } catch {
+    // Not valid base58 — try base64 decode
+  }
+  try {
+    const bytes = Buffer.from(address, "base64");
+    if (bytes.length === 32) {
+      return new PublicKey(bytes).toBase58();
+    }
+  } catch {
+    // Not valid base64 either
+  }
+  // Return as-is and let downstream handle any error
+  return address;
+}
+
+/**
  * Connect to Solana wallet via Seeker
- * Returns wallet address and auth token
+ * Requires user to approve a sign-message step for security.
  */
 export async function connectWallet(): Promise<WalletConnectResult> {
   const redirect = Linking.createURL("wallet");
 
   try {
-    const authorizationResult = await transact(async (wallet) => {
-      const res = await wallet.authorize({
+    const result = await transact(async (wallet) => {
+      // Step 1: Authorize — gets wallet address
+      const auth = await wallet.authorize({
         cluster: CONFIG.SOLANA_CLUSTER,
         identity: {
           name: CONFIG.APP_NAME,
@@ -30,18 +57,31 @@ export async function connectWallet(): Promise<WalletConnectResult> {
         },
       });
 
-      return res;
+      const account = auth?.accounts?.[0];
+      if (!account?.address) {
+        throw new Error("No wallet account returned from authorize()");
+      }
+
+      // Step 2: Sign a login message — forces the user to approve in wallet
+      const timestamp = Date.now();
+      const loginMessage = `VibeProof Login\nTimestamp: ${timestamp}`;
+      const encodedMessage = new TextEncoder().encode(loginMessage);
+
+      await wallet.signMessages({
+        addresses: [account.address],
+        payloads: [encodedMessage],
+      });
+
+      return { auth, timestamp };
     });
 
-    const firstAccount = authorizationResult?.accounts?.[0];
-    if (!firstAccount?.address) {
-      throw new Error("No wallet account returned from authorize()");
-    }
+    const rawAddress = result.auth.accounts[0].address;
+    const base58Address = normalizeAddress(rawAddress);
 
     return {
-      walletAddress: firstAccount.address,
-      authToken: authorizationResult.auth_token || "",
-      timestamp: Date.now(),
+      walletAddress: base58Address,
+      authToken: result.auth.auth_token || "",
+      timestamp: result.timestamp,
     };
   } catch (error: any) {
     const message = error?.message || String(error) || "Unknown wallet error";
