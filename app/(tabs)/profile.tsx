@@ -4,16 +4,15 @@
  */
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { FadeInView } from "@/components/FadeInView";
-import { SocialLinkCard } from "@/components/SocialLinkCard";
 import { StatsPanel } from "@/components/StatsPanel";
 import { WalletButton } from "@/components/WalletButton";
 import { XLinkCard } from "@/components/XLinkCard";
 import { useUser } from "@/hooks/useUser";
 import { useWallet } from "@/hooks/useWallet";
 import { useXLink } from "@/hooks/useXLink";
+import { CONFIG } from "@/lib/config";
 import { hapticSuccess } from "@/lib/haptics";
-import { getSocialLinks, removeSocialLink, saveSocialLink, SocialLink } from "@/lib/localStore";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -34,24 +33,6 @@ export default function ProfileScreen() {
   const [newUsername, setNewUsername] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
-  const [isLinkingTg, setIsLinkingTg] = useState(false);
-  const [isLinkingDiscord, setIsLinkingDiscord] = useState(false);
-
-  // Load social links
-  const loadSocialLinks = useCallback(async () => {
-    if (!address) return;
-    try {
-      const links = await getSocialLinks(address);
-      setSocialLinks(links);
-    } catch {}
-  }, [address]);
-
-  useEffect(() => {
-    if (isConnected && address) {
-      loadSocialLinks();
-    }
-  }, [isConnected, address, loadSocialLinks]);
 
   // Sync username when user changes
   useEffect(() => {
@@ -138,74 +119,16 @@ export default function ProfileScreen() {
         <StatsPanel user={user} isLoading={isLoading} />
       </FadeInView>
 
-      {/* X Account Linking */}
-      {isConnected && (
+      {/* X Account Linking — only show when configured */}
+      {isConnected && !!CONFIG.X_CLIENT_ID && (
         <FadeInView index={3}>
           <XLinkCard xLink={xLink} />
         </FadeInView>
       )}
 
-      {/* Telegram Linking */}
-      {isConnected && (
-        <FadeInView index={4}>
-          <SocialLinkCard
-            provider="telegram"
-            title="Telegram"
-            icon="✈️"
-            joinUrl="https://t.me/vibeproof"
-            isLinked={socialLinks.some((l) => l.provider === "telegram")}
-            linkedUsername={socialLinks.find((l) => l.provider === "telegram")?.username}
-            isLinking={isLinkingTg}
-            onLink={async () => {
-              setIsLinkingTg(true);
-              try {
-                await saveSocialLink(address!, { provider: "telegram", username: "linked", linkedAt: new Date().toISOString() });
-                await loadSocialLinks();
-                await hapticSuccess();
-              } finally {
-                setIsLinkingTg(false);
-              }
-            }}
-            onUnlink={async () => {
-              await removeSocialLink(address!, "telegram");
-              await loadSocialLinks();
-            }}
-          />
-        </FadeInView>
-      )}
-
-      {/* Discord Linking */}
-      {isConnected && (
-        <FadeInView index={5}>
-          <SocialLinkCard
-            provider="discord"
-            title="Discord"
-            icon="💬"
-            joinUrl="https://discord.gg/vibeproof"
-            isLinked={socialLinks.some((l) => l.provider === "discord")}
-            linkedUsername={socialLinks.find((l) => l.provider === "discord")?.username}
-            isLinking={isLinkingDiscord}
-            onLink={async () => {
-              setIsLinkingDiscord(true);
-              try {
-                await saveSocialLink(address!, { provider: "discord", username: "linked", linkedAt: new Date().toISOString() });
-                await loadSocialLinks();
-                await hapticSuccess();
-              } finally {
-                setIsLinkingDiscord(false);
-              }
-            }}
-            onUnlink={async () => {
-              await removeSocialLink(address!, "discord");
-              await loadSocialLinks();
-            }}
-          />
-        </FadeInView>
-      )}
-
       {/* Username Section */}
       {isConnected && (
-        <FadeInView index={6}>
+        <FadeInView index={4}>
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Username</Text>
             <TextInput
@@ -240,7 +163,7 @@ export default function ProfileScreen() {
       )}
 
       {/* Info Section */}
-      <FadeInView index={7}>
+      <FadeInView index={5}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>About</Text>
           <Text style={styles.infoText}>

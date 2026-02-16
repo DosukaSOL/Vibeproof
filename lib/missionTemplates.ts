@@ -66,17 +66,7 @@ const DAILY_POOL: MissionTemplate[] = [
     xp_reward: 25,
     icon: "📱",
   },
-  {
-    id: "daily_share",
-    title: "Share with a Friend",
-    description:
-      "Share VibeProof with someone (provide a screenshot as proof)",
-    category: "daily",
-    verification_type: "manual",
-    verification_config: {},
-    xp_reward: 75,
-    icon: "📤",
-  },
+
   {
     id: "daily_explore",
     title: "Explore Solana",
@@ -133,26 +123,7 @@ const ONE_TIME_MISSIONS: MissionTemplate[] = [
     xp_reward: 200,
     icon: "𝕏",
   },
-  {
-    id: "ot_link_telegram",
-    title: "Join Telegram",
-    description: "Join the VibeProof Telegram community",
-    category: "one_time",
-    verification_type: "social_link",
-    verification_config: { provider: "telegram" },
-    xp_reward: 150,
-    icon: "✈️",
-  },
-  {
-    id: "ot_link_discord",
-    title: "Join Discord",
-    description: "Join the VibeProof Discord server",
-    category: "one_time",
-    verification_type: "social_link",
-    verification_config: { provider: "discord" },
-    xp_reward: 150,
-    icon: "💬",
-  },
+
   {
     id: "ot_follow_vibeproof",
     title: "Follow @VibeProofSOL on X",
