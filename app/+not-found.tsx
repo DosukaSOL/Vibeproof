@@ -12,17 +12,17 @@ export default function NotFoundScreen() {
           alignItems: "center",
           justifyContent: "center",
           padding: 20,
-          backgroundColor: "#fff",
+          backgroundColor: "#0D1117",
         }}
       >
         <Text
-          style={{ fontSize: 18, fontWeight: "700", color: "#000", marginBottom: 12 }}
+          style={{ fontSize: 18, fontWeight: "700", color: "#E6EDF3", marginBottom: 12 }}
         >
           This screen doesn't exist.
         </Text>
         <Link
           href="/(tabs)/profile"
-          style={{ fontSize: 16, color: "#0a7ea4" }}
+          style={{ fontSize: 16, color: "#58A6FF" }}
         >
           Go to home screen
         </Link>

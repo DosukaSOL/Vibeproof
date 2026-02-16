@@ -6,6 +6,7 @@ import { FadeInView } from "@/components/FadeInView";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useWallet } from "@/hooks/useWallet";
 import { formatWalletAddress } from "@/lib/solana";
+import { T } from "@/lib/theme";
 import React, { useState } from "react";
 import {
     ActivityIndicator,
@@ -93,7 +94,7 @@ export default function LeaderboardScreen() {
 
       {isLoading && users.length === 0 ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#00FF00" />
+          <ActivityIndicator size="large" color={T.accent} />
           <Text style={styles.loadingText}>Loading leaderboard...</Text>
         </View>
       ) : users.length === 0 ? (
@@ -114,6 +115,9 @@ export default function LeaderboardScreen() {
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
+              tintColor={T.accent}
+              colors={[T.accent]}
+              progressBackgroundColor={T.surface}
             />
           }
           onEndReached={handleEndReached}
@@ -123,7 +127,7 @@ export default function LeaderboardScreen() {
 
       {shouldShowLoadMore && (
         <View style={styles.loadMoreContainer}>
-          <ActivityIndicator size="small" color="#00FF00" />
+          <ActivityIndicator size="small" color={T.accent} />
           <Text style={styles.loadMoreText}>Loading more...</Text>
         </View>
       )}
@@ -136,31 +140,31 @@ const styles = {
     flex: 1,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#FFF",
+    backgroundColor: T.bg,
   },
   header: {
     marginBottom: 16,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "700" as const,
-    color: "#000",
+    color: T.text,
   },
   subtitle: {
     fontSize: 14,
-    color: "#666",
+    color: T.textSec,
     marginTop: 4,
   },
   errorBox: {
-    backgroundColor: "#FEE2E2",
-    borderRadius: 8,
+    backgroundColor: T.errorBg,
+    borderRadius: T.rS,
     padding: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#FECACA",
+    borderColor: T.error,
   },
   errorText: {
-    color: "#DC2626",
+    color: T.error,
     fontSize: 13,
   },
   loadingContainer: {
@@ -171,23 +175,23 @@ const styles = {
   },
   loadingText: {
     fontSize: 14,
-    color: "#666",
+    color: T.textSec,
   },
   row: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    backgroundColor: "white",
-    borderRadius: 10,
+    backgroundColor: T.surface,
+    borderRadius: T.r,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: T.border,
     gap: 12,
   },
   currentUserRow: {
-    backgroundColor: "#F0F9FF",
-    borderColor: "#0EA5E9",
+    backgroundColor: T.accentBg,
+    borderColor: T.accent,
     borderWidth: 2,
   },
   rankContainer: {
@@ -197,7 +201,7 @@ const styles = {
   rank: {
     fontSize: 14,
     fontWeight: "700" as const,
-    color: "#00FF00",
+    color: T.accent,
   },
   userInfo: {
     flex: 1,
@@ -206,11 +210,11 @@ const styles = {
   username: {
     fontSize: 15,
     fontWeight: "700" as const,
-    color: "#000",
+    color: T.text,
   },
   wallet: {
     fontSize: 12,
-    color: "#999",
+    color: T.textMuted,
   },
   statsContainer: {
     flexDirection: "row" as const,
@@ -222,13 +226,13 @@ const styles = {
   },
   statLabel: {
     fontSize: 10,
-    color: "#999",
+    color: T.textMuted,
     fontWeight: "600" as const,
   },
   statValue: {
     fontSize: 14,
     fontWeight: "700" as const,
-    color: "#000",
+    color: T.xp,
   },
   emptyState: {
     alignItems: "center" as const,
@@ -242,11 +246,11 @@ const styles = {
   emptyTitle: {
     fontSize: 18,
     fontWeight: "700" as const,
-    color: "#000",
+    color: T.text,
   },
   emptyText: {
     fontSize: 14,
-    color: "#666",
+    color: T.textSec,
     textAlign: "center" as const,
     maxWidth: 280,
     lineHeight: 18,
@@ -258,6 +262,6 @@ const styles = {
   },
   loadMoreText: {
     fontSize: 12,
-    color: "#666",
+    color: T.textSec,
   },
 };

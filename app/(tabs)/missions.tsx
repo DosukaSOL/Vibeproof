@@ -8,6 +8,7 @@ import { FadeInView } from "@/components/FadeInView";
 import { MissionTab, useMissionEngine } from "@/hooks/useMissionEngine";
 import { useWallet } from "@/hooks/useWallet";
 import { hapticSelection } from "@/lib/haptics";
+import { T } from "@/lib/theme";
 import React, { useState } from "react";
 import {
     ActivityIndicator,
@@ -60,7 +61,7 @@ export default function MissionsScreen() {
     <ScrollView
       contentContainerStyle={styles.container}
       refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+        <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={T.accent} colors={[T.accent]} progressBackgroundColor={T.surface} />
       }
     >
       <View style={styles.header}>
@@ -110,7 +111,7 @@ export default function MissionsScreen() {
 
       {engine.isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#00FF00" />
+          <ActivityIndicator size="large" color={T.accent} />
           <Text style={styles.loadingText}>Loading missions...</Text>
         </View>
       ) : isRepeatable ? (
@@ -182,27 +183,30 @@ const styles = {
     minHeight: "100%" as any,
     paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor: T.bg,
   },
   header: {
     marginBottom: 12,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "700" as const,
-    color: "#000",
+    color: T.text,
   },
   subtitle: {
     fontSize: 14,
-    color: "#666",
+    color: T.textSec,
     marginTop: 4,
   },
   tabContainer: {
     flexDirection: "row" as const,
-    backgroundColor: "#F3F4F6",
-    borderRadius: 12,
+    backgroundColor: T.surface,
+    borderRadius: T.r,
     padding: 4,
     marginBottom: 16,
     gap: 4,
+    borderWidth: 1,
+    borderColor: T.border,
   },
   tab: {
     flex: 1,
@@ -211,31 +215,28 @@ const styles = {
     alignItems: "center" as const,
   },
   tabActive: {
-    backgroundColor: "white",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
+    backgroundColor: T.surface2,
+    borderWidth: 1,
+    borderColor: T.border,
   },
   tabText: {
     fontSize: 13,
     fontWeight: "600" as const,
-    color: "#666",
+    color: T.textMuted,
   },
   tabTextActive: {
-    color: "#000",
+    color: T.text,
   },
   errorBox: {
-    backgroundColor: "#FEE2E2",
-    borderRadius: 8,
+    backgroundColor: T.errorBg,
+    borderRadius: T.rS,
     padding: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#FECACA",
+    borderColor: T.error,
   },
   errorText: {
-    color: "#DC2626",
+    color: T.error,
     fontSize: 13,
   },
   loadingContainer: {
@@ -246,7 +247,7 @@ const styles = {
   },
   loadingText: {
     fontSize: 14,
-    color: "#666",
+    color: T.textSec,
   },
   missionsGrid: {
     gap: 12,
@@ -264,11 +265,11 @@ const styles = {
   emptyTitle: {
     fontSize: 18,
     fontWeight: "700" as const,
-    color: "#000",
+    color: T.text,
   },
   emptyText: {
     fontSize: 14,
-    color: "#666",
+    color: T.textSec,
     textAlign: "center" as const,
     maxWidth: 280,
     lineHeight: 18,
