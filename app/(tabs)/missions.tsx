@@ -1,10 +1,13 @@
 /**
  * Missions Tab
- * Complete missions to earn XP
+ * Complete missions to earn XP — with Repeatable / One-time tabs
  */
-import { MissionCard } from "@/components/MissionCard";
-import { useMissions } from "@/hooks/useMissions";
+import { AnimatedPressable } from "@/components/AnimatedPressable";
+import { EngineMissionCard } from "@/components/EngineMissionCard";
+import { FadeInView } from "@/components/FadeInView";
+import { MissionTab, useMissionEngine } from "@/hooks/useMissionEngine";
 import { useWallet } from "@/hooks/useWallet";
+import { hapticSelection } from "@/lib/haptics";
 import React, { useState } from "react";
 import {
     ActivityIndicator,
@@ -16,30 +19,22 @@ import {
 
 export default function MissionsScreen() {
   const { address, isConnected } = useWallet();
-  const {
-    missions,
-    isLoading,
-    isSubmitting,
-    error,
-    submitCompletion,
-    isCompleted,
-    refresh,
-  } = useMissions(isConnected ? address : null);
+  const engine = useMissionEngine(isConnected ? address : null);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefresh = async () => {
     try {
       setIsRefreshing(true);
-      await refresh();
+      await engine.refresh();
     } finally {
       setIsRefreshing(false);
     }
   };
 
-  const handleSubmit = (missionId: string) => async (proof: string) => {
-    await submitCompletion(missionId, proof);
-    await handleRefresh();
+  const handleTabSwitch = (tab: MissionTab) => {
+    hapticSelection();
+    engine.setActiveTab(tab);
   };
 
   if (!isConnected) {
@@ -57,6 +52,10 @@ export default function MissionsScreen() {
     );
   }
 
+  const repeatableCount = engine.repeatableMissions.length;
+  const oneTimeCount = engine.oneTimeMissions.length;
+  const isRepeatable = engine.activeTab === "repeatable";
+
   return (
     <ScrollView
       contentContainerStyle={styles.container}
@@ -69,38 +68,110 @@ export default function MissionsScreen() {
         <Text style={styles.subtitle}>Earn XP by completing actions</Text>
       </View>
 
-      {error && (
+      {/* Tab Selector */}
+      <View style={styles.tabContainer}>
+        <AnimatedPressable
+          onPress={() => handleTabSwitch("repeatable")}
+          enableHaptics={false}
+          style={{
+            ...styles.tab,
+            ...(isRepeatable ? styles.tabActive : {}),
+          }}
+        >
+          <Text style={{
+            ...styles.tabText,
+            ...(isRepeatable ? styles.tabTextActive : {}),
+          }}>
+            Repeatable ({repeatableCount})
+          </Text>
+        </AnimatedPressable>
+        <AnimatedPressable
+          onPress={() => handleTabSwitch("one_time")}
+          enableHaptics={false}
+          style={{
+            ...styles.tab,
+            ...(!isRepeatable ? styles.tabActive : {}),
+          }}
+        >
+          <Text style={{
+            ...styles.tabText,
+            ...(!isRepeatable ? styles.tabTextActive : {}),
+          }}>
+            One-time ({oneTimeCount})
+          </Text>
+        </AnimatedPressable>
+      </View>
+
+      {engine.error && (
         <View style={styles.errorBox}>
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorText}>{engine.error}</Text>
         </View>
       )}
 
-      {isLoading ? (
+      {engine.isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#00FF00" />
           <Text style={styles.loadingText}>Loading missions...</Text>
         </View>
-      ) : missions.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>✨</Text>
-          <Text style={styles.emptyTitle}>No Missions Yet</Text>
-          <Text style={styles.emptyText}>
-            Check back soon for new missions to complete!
-          </Text>
-        </View>
+      ) : isRepeatable ? (
+        /* ─── Repeatable Missions ─── */
+        repeatableCount === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>✨</Text>
+            <Text style={styles.emptyTitle}>No Missions Today</Text>
+            <Text style={styles.emptyText}>
+              Check back tomorrow for new daily missions!
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.missionsGrid}>
+            {engine.repeatableMissions.map((mission, index) => (
+              <FadeInView key={mission.id} index={index}>
+                <EngineMissionCard
+                  mission={mission}
+                  isCompleted={engine.isInstanceCompleted(mission.id)}
+                  verificationStatus={engine.getVerificationStatus(mission.id)}
+                  onVerify={() => engine.verifyInstance(mission)}
+                  onSubmitProof={(proof) =>
+                    engine.submitManualProof(
+                      { instanceId: mission.id },
+                      proof,
+                      mission.verification_type,
+                      mission.verification_config,
+                      mission.xp_reward
+                    )
+                  }
+                />
+              </FadeInView>
+            ))}
+          </View>
+        )
       ) : (
-        <View style={styles.missionsGrid}>
-          {missions.map((mission, index) => (
-            <FadeInView key={mission.id} index={index}>
-              <MissionCard
-                mission={mission}
-                isCompleted={isCompleted(mission.id)}
-                isSubmitting={isSubmitting}
-                onSubmit={handleSubmit(mission.id)}
-              />
-            </FadeInView>
-          ))}
-        </View>
+        /* ─── One-Time Missions ─── */
+        oneTimeCount === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>🏅</Text>
+            <Text style={styles.emptyTitle}>All Done!</Text>
+            <Text style={styles.emptyText}>
+              You've completed all one-time missions. Check repeatable missions
+              for more XP!
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.missionsGrid}>
+            {engine.oneTimeMissions.map((template, index) => (
+              <FadeInView key={template.id} index={index}>
+                <EngineMissionCard
+                  mission={template}
+                  isCompleted={engine.isOneTimeCompleted(template.id)}
+                  verificationStatus={engine.getVerificationStatus(template.id)}
+                  onVerify={() => engine.verifyOneTime(template)}
+                  isOneTime
+                />
+              </FadeInView>
+            ))}
+          </View>
+        )
       )}
     </ScrollView>
   );
@@ -113,7 +184,7 @@ const styles = {
     paddingVertical: 12,
   },
   header: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   title: {
     fontSize: 32,
@@ -124,6 +195,36 @@ const styles = {
     fontSize: 14,
     color: "#666",
     marginTop: 4,
+  },
+  tabContainer: {
+    flexDirection: "row" as const,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+    gap: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center" as const,
+  },
+  tabActive: {
+    backgroundColor: "white",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: 13,
+    fontWeight: "600" as const,
+    color: "#666",
+  },
+  tabTextActive: {
+    color: "#000",
   },
   errorBox: {
     backgroundColor: "#FEE2E2",
