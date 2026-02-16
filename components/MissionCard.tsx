@@ -1,13 +1,12 @@
 /**
  * MissionCard Component
- * Display individual mission
+ * Display individual mission with animations + haptics
  */
 import { DbMission } from "@/lib/supabase";
 import React, { useState } from "react";
 import {
     ActivityIndicator,
     Alert,
-    Pressable,
     Text,
     TextInput,
     View,
@@ -29,18 +28,32 @@ export function MissionCard({
   const [showProofInput, setShowProofInput] = useState(false);
   const [proof, setProof] = useState("");
 
+  // XP reward pop animation
+  const xpScale = useSharedValue(1);
+  const xpAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: xpScale.value }],
+  }));
+
   const handleSubmit = async () => {
     if (!proof.trim()) {
+      await hapticError();
       Alert.alert("Missing proof", "Please provide proof of completion");
       return;
     }
 
     try {
       await onSubmit(proof.trim());
+      await hapticXpGained();
+      // Pop the XP badge
+      xpScale.value = withSequence(
+        withSpring(1.4, SPRING.bouncy),
+        withSpring(1, SPRING.default)
+      );
       Alert.alert("Success", "Mission completion submitted!");
       setProof("");
       setShowProofInput(false);
     } catch (error: any) {
+      await hapticError();
       Alert.alert("Error", error?.message || "Failed to submit completion");
     }
   };
@@ -75,17 +88,19 @@ export function MissionCard({
       )}
 
       <View style={styles.footer}>
-        <Text style={styles.xpReward}>+{mission.xp_reward} XP</Text>
+        <Animated.View style={xpAnimStyle}>
+          <Text style={styles.xpReward}>+{mission.xp_reward} XP</Text>
+        </Animated.View>
 
         {!isCompleted && (
           <>
             {!showProofInput ? (
-              <Pressable
+              <AnimatedPressable
                 onPress={() => setShowProofInput(true)}
                 style={styles.submitButton}
               >
                 <Text style={styles.submitButtonText}>Complete</Text>
-              </Pressable>
+              </AnimatedPressable>
             ) : (
               <View style={styles.proofInputContainer}>
                 <TextInput
@@ -96,21 +111,20 @@ export function MissionCard({
                   style={styles.proofInput}
                   placeholderTextColor="#999"
                 />
-                <Pressable
+                <AnimatedPressable
                   onPress={handleSubmit}
                   disabled={isSubmitting || !proof.trim()}
-                  style={[
-                    styles.confirmButton,
-                    (isSubmitting || !proof.trim()) &&
-                      styles.confirmButtonDisabled,
-                  ]}
+                  style={{
+                    ...styles.confirmButton,
+                    ...((isSubmitting || !proof.trim()) ? styles.confirmButtonDisabled : {}),
+                  }}
                 >
                   {isSubmitting ? (
                     <ActivityIndicator size="small" color="white" />
                   ) : (
                     <Text style={styles.confirmButtonText}>Submit</Text>
                   )}
-                </Pressable>
+                </AnimatedPressable>
               </View>
             )}
           </>

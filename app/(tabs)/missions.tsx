@@ -90,14 +90,15 @@ export default function MissionsScreen() {
         </View>
       ) : (
         <View style={styles.missionsGrid}>
-          {missions.map((mission) => (
-            <MissionCard
-              key={mission.id}
-              mission={mission}
-              isCompleted={isCompleted(mission.id)}
-              isSubmitting={isSubmitting}
-              onSubmit={handleSubmit(mission.id)}
-            />
+          {missions.map((mission, index) => (
+            <FadeInView key={mission.id} index={index}>
+              <MissionCard
+                mission={mission}
+                isCompleted={isCompleted(mission.id)}
+                isSubmitting={isSubmitting}
+                onSubmit={handleSubmit(mission.id)}
+              />
+            </FadeInView>
           ))}
         </View>
       )}

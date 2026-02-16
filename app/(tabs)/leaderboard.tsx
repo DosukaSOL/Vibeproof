@@ -44,32 +44,33 @@ export default function LeaderboardScreen() {
     const level = Math.floor(user.xp / 1000) + 1;
 
     return (
-      <View
-        key={user.wallet}
-        style={[styles.row, isCurrentUser && styles.currentUserRow]}
-      >
-        <View style={styles.rankContainer}>
-          <Text style={styles.rank}>#{index + 1}</Text>
-        </View>
-
-        <View style={styles.userInfo}>
-          <Text style={styles.username}>
-            {user.username || formatWalletAddress(user.wallet)}
-          </Text>
-          <Text style={styles.wallet}>{formatWalletAddress(user.wallet)}</Text>
-        </View>
-
-        <View style={styles.statsContainer}>
-          <View style={styles.statBox}>
-            <Text style={styles.statLabel}>Lvl</Text>
-            <Text style={styles.statValue}>{level}</Text>
+      <FadeInView key={user.wallet} index={index}>
+        <View
+          style={[styles.row, isCurrentUser && styles.currentUserRow]}
+        >
+          <View style={styles.rankContainer}>
+            <Text style={styles.rank}>#{index + 1}</Text>
           </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statLabel}>XP</Text>
-            <Text style={styles.statValue}>{user.xp}</Text>
+
+          <View style={styles.userInfo}>
+            <Text style={styles.username}>
+              {user.username || formatWalletAddress(user.wallet)}
+            </Text>
+            <Text style={styles.wallet}>{formatWalletAddress(user.wallet)}</Text>
+          </View>
+
+          <View style={styles.statsContainer}>
+            <View style={styles.statBox}>
+              <Text style={styles.statLabel}>Lvl</Text>
+              <Text style={styles.statValue}>{level}</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={styles.statLabel}>XP</Text>
+              <Text style={styles.statValue}>{user.xp}</Text>
+            </View>
           </View>
         </View>
-      </View>
+      </FadeInView>
     );
   };
 
