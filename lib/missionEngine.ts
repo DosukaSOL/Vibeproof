@@ -1,11 +1,22 @@
 /**
  * Mission Engine
- * Generates mission instances and orchestrates verification
+ * Generates mission instances and orchestrates verification.
+ * NOTE: All external imports are lazy to prevent crashes during module loading.
  */
-import { supabase } from "./supabase";
-import { verifyOnChain } from "./verifyOnChain";
-import { verifyX } from "./verifyX";
-import { loadXLink } from "./xLink";
+
+// Lazy imports — only resolved when functions are actually called
+function getSupabase() {
+  return require("./supabase").supabase;
+}
+function getVerifyOnChain() {
+  return require("./verifyOnChain").verifyOnChain;
+}
+function getVerifyX() {
+  return require("./verifyX").verifyX;
+}
+function getLoadXLink() {
+  return require("./xLink").loadXLink;
+}
 
 // ─── Types ───────────────────────────────────────────
 export interface MissionTemplate {
@@ -56,7 +67,7 @@ export interface MissionCompletion {
  * Safe to call multiple times — uses ON CONFLICT DO NOTHING.
  */
 export async function generateMissionInstances(): Promise<number> {
-  const { data, error } = await supabase.rpc("generate_daily_missions");
+  const { data, error } = await getSupabase().rpc("generate_daily_missions");
 
   if (error) {
     console.error("[MissionEngine] Generation error:", error);
@@ -74,7 +85,7 @@ export async function generateMissionInstances(): Promise<number> {
 export async function getActiveMissions(): Promise<MissionInstance[]> {
   const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("mission_instances")
     .select("*")
     .eq("active", true)
@@ -95,7 +106,7 @@ export async function getActiveMissions(): Promise<MissionInstance[]> {
  * Get all one-time mission templates
  */
 export async function getOneTimeMissions(): Promise<MissionTemplate[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("mission_templates")
     .select("*")
     .eq("category", "one_time")
@@ -117,7 +128,7 @@ export async function getOneTimeMissions(): Promise<MissionTemplate[]> {
 export async function getUserMissionCompletions(
   wallet: string
 ): Promise<MissionCompletion[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("mission_completions")
     .select("*")
     .eq("user_wallet", wallet)
@@ -180,7 +191,7 @@ export async function verifyAndComplete(
   const { instanceId, templateId, verificationType, verificationConfig, xpReward, manualProof } = opts;
 
   // 1. Create pending completion
-  const { data: completion, error: insertError } = await supabase
+  const { data: completion, error: insertError } = await getSupabase()
     .from("mission_completions")
     .insert({
       user_wallet: wallet,
@@ -204,9 +215,9 @@ export async function verifyAndComplete(
   let verificationResult: { verified: boolean; proof: Record<string, any>; message: string };
 
   if (verificationType.startsWith("on_chain_")) {
-    verificationResult = await verifyOnChain(wallet, verificationType, verificationConfig);
+    verificationResult = await getVerifyOnChain()(wallet, verificationType, verificationConfig);
   } else if (verificationType.startsWith("x_")) {
-    verificationResult = await verifyX(wallet, verificationType, verificationConfig);
+    verificationResult = await getVerifyX()(wallet, verificationType, verificationConfig);
   } else if (verificationType === "app_action") {
     // App actions are verified by the fact they happened
     verificationResult = await verifyAppAction(wallet, verificationConfig);
@@ -229,7 +240,7 @@ export async function verifyAndComplete(
   const now = new Date().toISOString();
   const newStatus = verificationResult.verified ? "verified" : "failed";
 
-  const { data: updated, error: updateError } = await supabase
+  const { data: updated, error: updateError } = await getSupabase()
     .from("mission_completions")
     .update({
       status: newStatus,
@@ -259,7 +270,7 @@ export async function verifyAndComplete(
 // ─── Award XP ────────────────────────────────────────
 async function awardXP(wallet: string, amount: number): Promise<void> {
   // Get current XP
-  const { data: user, error: fetchError } = await supabase
+  const { data: user, error: fetchError } = await getSupabase()
     .from("users")
     .select("xp")
     .eq("wallet", wallet)
@@ -272,7 +283,7 @@ async function awardXP(wallet: string, amount: number): Promise<void> {
 
   const newXP = (user?.xp || 0) + amount;
 
-  const { error: updateError } = await supabase
+  const { error: updateError } = await getSupabase()
     .from("users")
     .update({ xp: newXP, updated_at: new Date().toISOString() })
     .eq("wallet", wallet);
@@ -291,7 +302,7 @@ async function verifyAppAction(
 
   switch (action) {
     case "link_x": {
-      const xLink = await loadXLink();
+      const xLink = await getLoadXLink()();
       return {
         verified: !!xLink,
         proof: xLink ? { x_username: xLink.x_username } : {},
@@ -300,7 +311,7 @@ async function verifyAppAction(
     }
 
     case "set_username": {
-      const { data: user } = await supabase
+      const { data: user } = await getSupabase()
         .from("users")
         .select("username")
         .eq("wallet", wallet)

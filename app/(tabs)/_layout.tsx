@@ -1,14 +1,14 @@
 // app/(tabs)/_layout.tsx
 import { T } from "@/lib/theme";
 import { Tabs } from "expo-router";
-import React from "react";
 import { Image, Platform, Text, View } from "react-native";
 
 const CenteredLogo = () => (
   <View style={{ alignItems: "center", justifyContent: "center" }}>
     <Image
       source={require("@/assets/vpicon.png")}
-      style={{ width: 48, height: 48, resizeMode: "contain", borderRadius: 10 }}
+      resizeMode="contain"
+      style={{ width: 48, height: 48, borderRadius: 10 }}
     />
   </View>
 );
