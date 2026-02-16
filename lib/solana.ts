@@ -6,7 +6,7 @@ import { transact } from "@solana-mobile/mobile-wallet-adapter-protocol-web3js";
 import { PublicKey } from "@solana/web3.js";
 import { Buffer } from "buffer";
 import * as Linking from "expo-linking";
-import "react-native-get-random-values";
+// Note: crypto.getRandomValues is polyfilled in index.js via expo-crypto
 import { CONFIG } from "./config";
 
 export interface WalletConnectResult {

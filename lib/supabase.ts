@@ -1,14 +1,84 @@
 /**
  * Supabase Client & Database Integration
+ *
+ * The client is LAZY-INITIALIZED on first use (not at module load time)
+ * to prevent native crashes during module initialization.
  */
-import { createClient } from "@supabase/supabase-js";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { CONFIG } from "./config";
 
-// Initialize Supabase client (with fallback empty strings if env vars not set)
-export const supabase = createClient(
-  CONFIG.SUPABASE_URL || "https://placeholder.supabase.co",
-  CONFIG.SUPABASE_ANON_KEY || "placeholder_key"
-);
+// ─── Lazy Client Initialization ─────────────────────────
+let _client: SupabaseClient | null = null;
+
+function getClient(): SupabaseClient {
+  if (!_client) {
+    try {
+      _client = createClient(
+        CONFIG.SUPABASE_URL || "https://placeholder.supabase.co",
+        CONFIG.SUPABASE_ANON_KEY || "placeholder_key",
+        {
+          auth: {
+            storage: AsyncStorage,
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: false,
+          },
+        }
+      );
+    } catch (e) {
+      console.error("[Supabase] createClient failed:", e);
+      // Return a no-op client so the app doesn't crash
+      return createNoopClient();
+    }
+  }
+  return _client;
+}
+
+/**
+ * No-op Supabase client that returns empty results for everything.
+ * Used as fallback if createClient() fails.
+ */
+function createNoopClient(): SupabaseClient {
+  const noopQuery = {
+    select: () => noopQuery,
+    insert: () => noopQuery,
+    update: () => noopQuery,
+    upsert: () => noopQuery,
+    delete: () => noopQuery,
+    eq: () => noopQuery,
+    neq: () => noopQuery,
+    gt: () => noopQuery,
+    lt: () => noopQuery,
+    or: () => noopQuery,
+    order: () => noopQuery,
+    range: () => noopQuery,
+    limit: () => noopQuery,
+    single: () => Promise.resolve({ data: null, error: { code: "NO_CLIENT", message: "Supabase not initialized" } }),
+    then: (resolve: any) => resolve({ data: null, error: { code: "NO_CLIENT", message: "Supabase not initialized" } }),
+  };
+  return {
+    from: () => noopQuery,
+    rpc: () => Promise.resolve({ data: null, error: { code: "NO_CLIENT", message: "Supabase not initialized" } }),
+    auth: { getSession: () => Promise.resolve({ data: { session: null }, error: null }) },
+  } as any;
+}
+
+/**
+ * Supabase client accessor.
+ * Uses a Proxy to lazy-initialize on first use.
+ * This way, importing this module does NOT immediately call createClient().
+ */
+export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
+  get(_, prop) {
+    const client = getClient();
+    const value = (client as any)[prop];
+    if (typeof value === "function") {
+      return value.bind(client);
+    }
+    return value;
+  },
+});
 
 /**
  * Database Types for Type Safety

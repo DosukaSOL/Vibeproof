@@ -1,6 +1,5 @@
-import { Audio } from "expo-av";
 import { router } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     Animated,
     Dimensions,
@@ -15,7 +14,8 @@ const { width } = Dimensions.get("window");
 
 export default function SplashScreen() {
   const [done, setDone] = useState(false);
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const soundRef = useRef<any>(null);
+  const mountedRef = useRef(true);
 
   // Plain RN Animated values — no Reanimated, no worklets, no UI-thread issues
   const logoOpacity = useRef(new Animated.Value(0)).current;
@@ -26,13 +26,21 @@ export default function SplashScreen() {
   const screenOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Play chime
+    mountedRef.current = true;
+
+    // Play chime — lazy require so expo-av native module doesn't init at import time
     (async () => {
       try {
+        const { Audio } = require("expo-av");
         const { sound } = await Audio.Sound.createAsync(
           require("@/assets/sounds/chime.wav"),
           { shouldPlay: true, volume: 0.7 }
         );
+        // Guard: if unmounted while loading, release immediately
+        if (!mountedRef.current) {
+          sound.unloadAsync().catch(() => {});
+          return;
+        }
         soundRef.current = sound;
       } catch (e) {
         console.warn("[Splash] Audio:", e);
@@ -110,25 +118,48 @@ export default function SplashScreen() {
     }, 2000);
 
     // Navigate after animation
-    const timer = setTimeout(() => setDone(true), 2500);
+    const timer = setTimeout(() => {
+      if (mountedRef.current) setDone(true);
+    }, 2500);
     return () => {
+      mountedRef.current = false;
       clearTimeout(timer);
-      soundRef.current?.unloadAsync().catch(() => {});
+      // Stop + unload synchronously before unmount completes
+      if (soundRef.current) {
+        soundRef.current.stopAsync().catch(() => {});
+        soundRef.current.unloadAsync().catch(() => {});
+        soundRef.current = null;
+      }
     };
   }, []);
 
-  // Navigate via useEffect — runs AFTER mount, after navigation context is ready
+  // Navigate via useEffect — stop audio FIRST, then navigate
   useEffect(() => {
     if (done) {
-      try {
-        router.replace("/(tabs)/profile");
-      } catch (e) {
-        console.error("[Splash] Navigation failed:", e);
-        // Retry once after a short delay
-        setTimeout(() => {
-          try { router.replace("/(tabs)/profile"); } catch {}
-        }, 500);
-      }
+      (async () => {
+        // Ensure audio is fully stopped before navigating
+        try {
+          if (soundRef.current) {
+            await soundRef.current.stopAsync();
+            await soundRef.current.unloadAsync();
+            soundRef.current = null;
+          }
+        } catch {
+          // Ignore audio cleanup errors
+        }
+
+        // Small delay to let native audio resources release
+        await new Promise((r) => setTimeout(r, 50));
+
+        try {
+          router.replace("/(tabs)/profile");
+        } catch (e) {
+          console.error("[Splash] Navigation failed:", e);
+          setTimeout(() => {
+            try { router.replace("/(tabs)/profile"); } catch {}
+          }, 500);
+        }
+      })();
     }
   }, [done]);
 

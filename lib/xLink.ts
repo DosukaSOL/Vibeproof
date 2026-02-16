@@ -1,10 +1,15 @@
 /**
  * X (Twitter) Account Linking
- * OAuth 2.0 PKCE flow for linking X accounts to wallet profiles
+ * OAuth 2.0 PKCE flow for linking X accounts to wallet profiles.
+ * Supabase is lazy-loaded to prevent crashes during module initialization.
  */
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CONFIG } from "./config";
-import { supabase } from "./supabase";
+
+// Lazy Supabase getter — only loaded when actually calling DB functions
+function getSupabase() {
+  return require("./supabase").supabase;
+}
 
 const X_STORAGE_KEY = "vibeproof_x_link";
 
@@ -65,7 +70,7 @@ export async function saveXLinkToDb(
   xUsername: string
 ): Promise<void> {
   const now = new Date().toISOString();
-  const { error } = await supabase.from("user_social_links").upsert(
+  const { error } = await getSupabase().from("user_social_links").upsert(
     {
       user_wallet: wallet,
       provider: "x",
@@ -87,7 +92,7 @@ export async function saveXLinkToDb(
  * Remove X link from Supabase
  */
 export async function removeXLinkFromDb(wallet: string): Promise<void> {
-  const { error } = await supabase
+  const { error } = await getSupabase()
     .from("user_social_links")
     .delete()
     .eq("user_wallet", wallet)
@@ -105,7 +110,7 @@ export async function removeXLinkFromDb(wallet: string): Promise<void> {
 export async function getXLinkFromDb(
   wallet: string
 ): Promise<XLinkStatus> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("user_social_links")
     .select("provider_user_id, provider_username, linked_at")
     .eq("user_wallet", wallet)

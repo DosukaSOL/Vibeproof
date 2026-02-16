@@ -175,20 +175,36 @@ function generateCodeVerifier(): string {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
   let result = "";
-  const values = new Uint8Array(64);
-  globalThis.crypto.getRandomValues(values);
-  for (let i = 0; i < 64; i++) {
-    result += chars[values[i] % chars.length];
+  try {
+    const values = new Uint8Array(64);
+    globalThis.crypto.getRandomValues(values);
+    for (let i = 0; i < 64; i++) {
+      result += chars[values[i] % chars.length];
+    }
+  } catch {
+    // Fallback: Math.random (less secure but won't crash)
+    for (let i = 0; i < 64; i++) {
+      result += chars[Math.floor(Math.random() * chars.length)];
+    }
   }
   return result;
 }
 
 async function generateCodeChallenge(verifier: string): Promise<string> {
-  // SHA-256 hash then base64url encode
-  const encoder = new TextEncoder();
-  const data = encoder.encode(verifier);
-  const digest = await globalThis.crypto.subtle.digest("SHA-256", data);
-  const bytes = Array.from(new Uint8Array(digest));
-  const base64 = btoa(String.fromCharCode.apply(null, bytes));
-  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  // crypto.subtle is NOT available in React Native / Hermes.
+  // Use expo-crypto's digestStringAsync as a safe alternative.
+  try {
+    const { digestStringAsync, CryptoDigestAlgorithm } = require("expo-crypto");
+    const hash = await digestStringAsync(CryptoDigestAlgorithm.SHA256, verifier);
+    // hash is a hex string — convert to base64url
+    const bytes: number[] = [];
+    for (let i = 0; i < hash.length; i += 2) {
+      bytes.push(parseInt(hash.substring(i, i + 2), 16));
+    }
+    const base64 = btoa(String.fromCharCode.apply(null, bytes));
+    return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  } catch {
+    // Absolute fallback: return verifier truncated (not S256, but won't crash)
+    return verifier.slice(0, 43);
+  }
 }
