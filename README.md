@@ -180,12 +180,6 @@ Available in the Seeker dApp store, VibeProof leverages the Seeker phone's nativ
 
 ---
 
-## 📜 License
-
-MIT License - View [LICENSE](LICENSE) for details
-
----
-
 <p align="center">
   <strong>Built for humans who actually do stuff.</strong><br/>
   <em>Proof of action. On Solana.</em>
