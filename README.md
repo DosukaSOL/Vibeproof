@@ -1,353 +1,182 @@
-# VibeProof
-
-A proof-of-action gaming platform for Solana. Connect your wallet, complete missions, earn XP, and climb the leaderboard.
-
-## Features
-
-✅ **Solana Wallet Integration** - Connect via Seeker (Solana Mobile Wallet Adapter)  
-✅ **Missions System** - Complete curated actions to earn XP  
-✅ **User Profiles** - Username, stats, and identity tracking  
-✅ **Leaderboard** - Real-time rankings by XP  
-✅ **Progression** - XP, levels, ranks, and streaks  
-✅ **Production Ready** - Secure, typed, tested  
+<p align="center">
+  <img src="assets/githubvplogo.png" alt="VibeProof" width="100%" style="max-width: 800px" />
+</p>
 
 ---
 
-## Tech Stack
+## 🎯 What is VibeProof?
 
-- **Frontend**: Expo, React Native, TypeScript
-- **Navigation**: Expo Router
-- **Wallet**: Solana Mobile Wallet Adapter (Seeker)
-- **Backend**: Supabase (PostgreSQL + RLS)
-- **State**: React Hooks + Custom Hooks
-- **Build**: EAS Build
+**VibeProof** is a **proof-of-action gaming platform** that turns real-world actions into digital rewards on Solana.
 
----
+Instead of endless scrolling and empty engagement metrics, VibeProof users:
+- **Connect their Solana wallet** (via Seeker)
+- **Complete verified missions** (follow, post, join, verify)
+- **Earn real XP and climb the leaderboard**
+- **Build an on-chain reputation**
 
-## Prerequisites
-
-- Node.js 18+ and npm/yarn
-- Expo CLI: `npm install -g expo-cli`
-- Solana Seeker app installed on test device (for Android testing)
-- Supabase account (free tier OK)
+Think of it as: **LinkedIn meets gaming, powered by Solana.**
 
 ---
 
-## Setup
+## 🚀 The Vision
 
-### 1. Clone Repository
+**Problem:** Digital platforms reward attention, not action. Social tokens and Web3 apps have no standardized way to verify that users actually did something.
 
-```bash
-git clone https://github.com/DosukaSOL/Vibeproof.git
-cd Vibeproof
-```
-
-### 2. Install Dependencies
-
-```bash
-npm install
-```
-
-### 3. Setup Supabase
-
-#### Create Supabase Project
-1. Go to [supabase.com](https://supabase.com)
-2. Create a new project
-3. Note your **Project URL** and **Anon Key** (from Settings > API)
-
-#### Setup Database Schema
-1. Go to SQL Editor in Supabase dashboard
-2. Paste the contents of `docs/supabase_setup.sql`
-3. Execute all queries
-
-This creates:
-- `users` table (profile data)
-- `missions` table (available quests)
-- `completions` table (mission submissions)
-- Helper functions and RLS policies
-
-#### Insert Sample Missions (Optional)
-In SQL Editor, run:
-```sql
-insert into public.missions (title, description, mission_type, xp_reward)
-values 
-  ('Follow on X', 'Follow @vibeproof on X', 'follow', 100),
-  ('Join Discord', 'Join our community', 'join', 150),
-  ('Share a Post', 'Post about VibeProof', 'post', 200);
-```
-
-### 4. Configure Environment Variables
-
-Create `.env.local` (or `.env` in root):
-
-```env
-EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...your_long_anon_key
-```
-
-**How to get these:**
-- URL: In Supabase → Settings → API → Project URL
-- Anon Key: In Supabase → Settings → API → `anon` key
-
-### 5. Start Development Server
-
-```bash
-npm start
-```
-
-This opens Expo Go. Options:
-- Press `i` for iOS simulator (macOS only)
-- Press `a` for Android emulator
-- Scan QR code with Expo Go app (mobile)
+**Solution:** VibeProof becomes the **proof-of-action layer** for Solana. Every mission completed is a verified action. Every XP earned is real. Every person on the leaderboard proved they showed up.
 
 ---
 
-## Project Structure
+## ✨ Key Features
 
-```
-app/
-├── _layout.tsx          # Root navigation
-└── (tabs)/
-    ├── _layout.tsx      # Tab navigation
-    ├── profile.tsx      # User profile & wallet connect
-    ├── missions.tsx     # Available missions
-    └── leaderboard.tsx  # User rankings
+🔐 **Solana-Native**
+- Real wallet authentication (Seeker integration)
+- No username/password, just your wallet
+- Secure, on-chain identity
 
-lib/
-├── config.ts            # App configuration
-├── auth.ts              # Session management
-├── solana.ts            # Solana wallet integration
-└── supabase.ts          # Database client & queries
+⚡ **Mission System**
+- Projects/DAOs create missions
+- Users complete actions and submit proof
+- Backend verifies (or on-chain contracts)
+- Earn XP instantly
 
-hooks/
-├── useWallet.ts         # Wallet state hook
-├── useUser.ts           # User profile hook
-├── useMissions.ts       # Missions hook
-└── useLeaderboard.ts    # Leaderboard hook
+🏆 **Gamified Progression**
+- XP-based leveling system
+- Global leaderboard rankings
+- Streaks & achievement tracking
+- Visual proof of impact
 
-components/
-├── WalletButton.tsx     # Connect/disconnect button
-├── MissionCard.tsx      # Mission display component
-└── StatsPanel.tsx       # User stats display
-
-docs/
-└── supabase_setup.sql   # Database schema
-```
+📊 **True Metrics**
+- Every action is verified
+- Transparent rankings
+- Real reputation scores
+- No fake engagement
 
 ---
 
-## Development Workflow
+## 💡 Use Cases
 
-### Test Locally
-```bash
-npm start
-```
-- Use Expo Go on phone or simulator
-- Wallet connection limited to dev client
+**For DAOs/Projects:**
+- Launch community challenges
+- Verify which members actually participate
+- Reward engaged community
+- Build organic growth
 
-### Build Dev Client
-```bash
-eas build --platform android --profile development
-```
+**For Users:**
+- Prove your involvement in Web3
+- Earn XP across platforms
+- Build verifiable reputation
+- Compete on global leaderboard
 
-### Build for Preview/Production
-```bash
-eas build --platform android --profile preview
-# or
-eas build --platform android --profile production
-```
-
-### Submit to Google Play
-```bash
-eas submit --platform android
-```
+**For Investors:**
+- Proof-of-Community metrics
+- Verify project health
+- Identify true contributors
+- Track organic growth
 
 ---
 
-## Wallet Integration
+## 🎮 The Experience
 
-### How It Works
+### User Journey:
+1. Open app → Connect Solana wallet
+2. Browse available missions
+3. Complete a mission (e.g., follow on X)
+4. Submit proof (screenshot, URL, etc)
+5. Admin verifies → XP awarded instantly
+6. Check leaderboard → See your rank
 
-1. **Connect** → User presses "Connect Solana Wallet"
-2. **Deep Link** → App opens Seeker (Solana Mobile Wallet)
-3. **Authorize** → User approves transaction in Seeker
-4. **Return** → Seeker returns to VibeProof with auth token
-5. **Store** → Session saved securely (AsyncStorage + SecureStore)
-6. **Reconnect** → Session restored on app restart
-
-### Flow Details
-
-- Uses `@solana-mobile/mobile-wallet-adapter-protocol-web3js`
-- Deep link scheme: `vibeproof://`
-- Handled by `lib/solana.ts` and `hooks/useWallet.ts`
-- Fallback: No demo wallets. Real wallet required.
-
----
-
-## Database Operations
-
-### Create New User
-```typescript
-import { upsertUser } from '@/lib/supabase';
-
-const user = await upsertUser('wallet_address_here', 'username');
-```
-
-### Get Leaderboard
-```typescript
-import { getLeaderboard } from '@/lib/supabase';
-
-const topUsers = await getLeaderboard(50, 0); // Top 50, page 0
-```
-
-### Submit Mission Completion
-```typescript
-import { submitMissionCompletion } from '@/lib/supabase';
-
-const completion = await submitMissionCompletion(
-  walletAddress,
-  missionId,
-  'proof_data_here'
-);
-```
-
-### Add XP
-```typescript
-import { addUserXP } from '@/lib/supabase';
-
-const updated = await addUserXP(walletAddress, 100);
-```
+### Admin Journey:
+1. Create missions
+2. Review submissions
+3. Verify or reject
+4. Users get XP
+5. Leaderboard updates in real-time
 
 ---
 
-## Styling
+## 🛠 Built For Scale
 
-All components use inline `StyleSheet` patterns. Color scheme:
+- **Solana-optimized** - Low fees, instant settlement
+- **Mobile-first** - Native iOS/Android experience
+- **Enterprise-ready** - PostgreSQL backend, RLS security
+- **Extensible** - Easy to add on-chain verification
 
-- **Primary**: `#7C3AED` (violet)
-- **Success**: `#22C55E` (green)
-- **Error**: `#EF4444` (red)
-- **Background**: `#F8F9FA` (light gray)
-- **Border**: `#E5E7EB` (gray)
-
-To customize: Edit style objects in component files.
+**Tech:** React Native, Expo, Supabase, Solana Mobile Wallet Adapter
 
 ---
 
-## RLS Policies
+## 📈 Metrics That Matter
 
-Supabase uses Row Level Security (RLS) for security:
-
-| Table | Select | Insert | Update | Notes |
-|-------|--------|--------|--------|-------|
-| users | Public | Anyone | Anyone | Public profiles |
-| missions | Active only | Admin | Admin | Users see active missions |
-| completions | Own only | Anyone | Backend | Users submit, backend verifies |
-
----
-
-## Common Issues
-
-### "Config validation failed"
-Missing environment variables. Create `.env.local` with Supabase keys.
-
-### "No wallet account returned"
-Seeker app not installed or not authorized. Must approve on device.
-
-### "Username taken"
-Choose a different username. Usernames are unique per user.
-
-### "Mission not found"
-Ensure missions exist in Supabase `missions` table and `active = true`.
+| Metric | Why It Matters |
+|--------|----------------|
+| **Verified Actions** | No bots, no spam - real humans |
+| **XP Leaderboard** | True engagement, not followers |
+| **Completion Rate** | Data-driven mission design |
+| **Wallet Activity** | Identify real contributors |
+| **Streak Chains** | Measure consistency & loyalty |
 
 ---
 
-## Testing Checklist
+## 🔮 Roadmap
 
-- [ ] Wallet connects successfully
-- [ ] Username saves without errors
-- [ ] Profile shows correct stats
-- [ ] Missions load from database
-- [ ] Can submit mission completion
-- [ ] Leaderboard shows top users
-- [ ] Pull-to-refresh works
-- [ ] Disconnect clears session
-- [ ] App survives hot reload
-- [ ] No console errors
+**Phase 1 (Current):** Mission system with manual verification
+**Phase 2:** On-chain verification (Twitter API, Discord webhooks, etc)
+**Phase 3:** DAO-created missions (any project can launch challenges)
+**Phase 4:** Tokenized rewards & marketplace
+**Phase 5:** Cross-chain reputation (Solana → other chains)
 
 ---
 
-## Deployment
+## 🤝 Who This Is For
 
-### To Google Play
-
-1. **Prepare**
-   ```bash
-   eas build --platform android --profile production
-   ```
-
-2. **Submit**
-   ```bash
-   eas submit --platform android
-   ```
-
-3. **Review** → Google reviews the app (typically 1-3 hours)
-
-4. **Launch** → Once approved, set availability in Play console
-
-### To App Store (iOS)
-
-1. Similar process, use `--platform ios`
-2. Requires Apple Developer account ($99/year)
-3. One-time: Generate signing credentials with `eas credentials`
+✅ **DAOs** building community  
+✅ **Projects** launching at launch  
+✅ **Investors** verifying metrics  
+✅ **Users** building on-chain reputation  
+✅ **Devs** building proof-of-action apps  
 
 ---
 
-## Security Notes
+## 💼 Business Model
 
-- Never commit `.env` or `.env.local`
-- Use Supabase RLS for data access control
-- Wallet signatures verified on client (for demo)
-- Sessions expire after 30 days
-- Use HTTPS for all URLs
-
----
-
-## Contributing
-
-1. Create feature branch: `git checkout -b feature/your-feature`
-2. Commit changes: `git commit -am 'Add feature'`
-3. Push: `git push origin feature/your-feature`
-4. Open PR on GitHub
+- **B2B:** DAOs/Projects pay to launch missions
+- **B2C:** Users earn without paying (free to use)
+- **Freemium:** Basic missions free, premium features for projects
+- **Verifier:** Premium verification services for mission admins
+- **Tokenomics:** Native token (future phase)
 
 ---
 
-## Support
+## 🎯 Current Status
 
-- GitHub Issues: [Report bugs](https://github.com/DosukaSOL/Vibeproof/issues)
-- Discussions: [Ask questions](https://github.com/DosukaSOL/Vibeproof/discussions)
-- Twitter: [@vibeproof](https://twitter.com/vibeproof)
+✅ **Production-ready mobile app**  
+✅ **Solana wallet integration (Seeker)**  
+✅ **Mission system with XP rewards**  
+✅ **Real-time leaderboard**  
+✅ **Supabase backend with RLS security**  
+✅ **iOS & Android build ready**  
 
----
-
-## License
-
-MIT License - See LICENSE file
-
----
-
-## Roadmap
-
-- [ ] Transaction verification (on-chain XP)
-- [ ] Badges/achievements system
-- [ ] Social sharing features
-- [ ] NFT rewards
-- [ ] Mobile app store listings
-- [ ] Web dashboard
-- [ ] API for third-party integrations
+🚀 **Ready to launch. Raising/deploying next.**
 
 ---
 
-**Built with ❤️ for Solana mobile.**
+## 📞 Contact
+
+- **Twitter:** [@vibeproof](https://twitter.com/vibeproof)
+- **GitHub:** [@DosukaSOL/Vibeproof](https://github.com/DosukaSOL/Vibeproof)
+- **Email:** dosukasol@vibeproof.app
+
+---
+
+## 📜 License
+
+MIT License - View [LICENSE](LICENSE) for details
+
+---
+
+<p align="center">
+  <strong>Built for humans who actually do stuff.</strong><br/>
+  <em>Proof of action. On Solana.</em>
+</p>
 
 
