@@ -6,8 +6,10 @@ import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { FadeInView } from "@/components/FadeInView";
 import { StatsPanel } from "@/components/StatsPanel";
 import { WalletButton } from "@/components/WalletButton";
+import { XLinkCard } from "@/components/XLinkCard";
 import { useUser } from "@/hooks/useUser";
 import { useWallet } from "@/hooks/useWallet";
+import { useXLink } from "@/hooks/useXLink";
 import { hapticSuccess } from "@/lib/haptics";
 import React, { useEffect, useState } from "react";
 import {
