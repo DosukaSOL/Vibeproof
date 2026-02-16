@@ -45,11 +45,12 @@ jobs:
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY' }}
           EXPO_PUBLIC_SOLANA_CLUSTER: ${{ secrets.SOLANA_CLUSTER || 'mainnet-beta' }}
 
-      - name: Set Gradle memory
+      - name: Set Gradle memory and bundle config
         run: |
           echo "org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m" >> android/gradle.properties
           echo "org.gradle.daemon=true" >> android/gradle.properties
           echo "org.gradle.parallel=true" >> android/gradle.properties
+          echo "bundleInDebug=true" >> android/gradle.properties
 
       - name: Build debug APK
         working-directory: android
