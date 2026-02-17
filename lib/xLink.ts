@@ -227,7 +227,16 @@ export async function completeXLink(
     last_refresh: now,
   });
 
-  // 4. Save to Supabase (non-fatal — link works locally even if DB fails)
+  // 4. Save to local social links store
+  const { saveSocialLink } = require("./localStore");
+  await saveSocialLink(wallet, {
+    provider: "x" as const,
+    username: profile.username,
+    userId: profile.id,
+    linkedAt: now,
+  });
+
+  // 5. Save to Supabase (non-fatal — link works locally even if DB fails)
   try {
     await saveXLinkToDb(wallet, profile.id, profile.username);
   } catch (dbErr) {
@@ -247,5 +256,7 @@ export async function completeXLink(
  */
 export async function unlinkX(wallet: string): Promise<void> {
   await clearXLink();
+  const { removeSocialLink } = require("./localStore");
+  await removeSocialLink(wallet, "x");
   await removeXLinkFromDb(wallet);
 }

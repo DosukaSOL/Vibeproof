@@ -6,6 +6,7 @@
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { FadeInView } from "@/components/FadeInView";
 import { UserAvatar } from "@/components/UserAvatar";
+import { useWallet } from "@/context/WalletContext";
 import { formatWalletAddress } from "@/lib/solana";
 import { T } from "@/lib/theme";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -42,23 +43,52 @@ export default function UserProfileScreen() {
   const avatarUri = params.avatarUri || "";
   const missionsCompleted = Math.floor(xp / 25); // estimate
 
+  const { address: myWallet } = useWallet();
+  const isOwnProfile = wallet && myWallet && wallet === myWallet;
   const [socialLinks, setSocialLinks] = useState<SocialLinkRow[]>([]);
 
-  // Fetch social links for this user from Supabase
+  // Fetch social links — try Supabase first, fall back to local secure storage
   useEffect(() => {
     if (!wallet) return;
     (async () => {
+      const found: SocialLinkRow[] = [];
+
+      // 1. Try Supabase
       try {
         const { data, error } = await getSupabase()
           .from("user_social_links")
           .select("provider, provider_username")
           .eq("user_wallet", wallet);
-        if (!error && data) setSocialLinks(data);
+        if (!error && data && data.length > 0) {
+          setSocialLinks(data);
+          return;
+        }
       } catch {
         // non-fatal
       }
+
+      // 2. Fall back to local data (own profile only)
+      if (isOwnProfile) {
+        try {
+          const { loadXLink } = require("@/lib/xLink");
+          const xData = await loadXLink();
+          if (xData?.x_username) {
+            found.push({ provider: "x", provider_username: xData.x_username });
+          }
+        } catch { /* ignore */ }
+
+        try {
+          const { loadGitHubLink } = require("@/lib/githubLink");
+          const ghData = await loadGitHubLink();
+          if (ghData?.github_username) {
+            found.push({ provider: "github", provider_username: ghData.github_username });
+          }
+        } catch { /* ignore */ }
+      }
+
+      if (found.length > 0) setSocialLinks(found);
     })();
-  }, [wallet]);
+  }, [wallet, isOwnProfile]);
 
   const xUsername = socialLinks.find((l) => l.provider === "x")?.provider_username;
   const githubUsername = socialLinks.find((l) => l.provider === "github")?.provider_username;
