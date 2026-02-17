@@ -1,27 +1,43 @@
 /**
  * Leaderboard Tab
- * See top users by XP
+ * See top users by XP — with search + tap to view profiles
  */
 import { FadeInView } from "@/components/FadeInView";
+import { UserAvatar } from "@/components/UserAvatar";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useWallet } from "@/hooks/useWallet";
 import { formatWalletAddress } from "@/lib/solana";
 import { T } from "@/lib/theme";
-import React, { useState } from "react";
+import { useRouter } from "expo-router";
+import { useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    RefreshControl,
-    Text,
-    View
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function LeaderboardScreen() {
+  const router = useRouter();
   const { address, isConnected } = useWallet();
   const { users, isLoading, hasMore, error, loadMore, refresh } =
     useLeaderboard(isConnected ? address : null);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery.trim()) return users;
+    const q = searchQuery.trim().toLowerCase();
+    return users.filter(
+      (u) =>
+        (u.username && u.username.toLowerCase().includes(q)) ||
+        u.wallet.toLowerCase().includes(q)
+    );
+  }, [users, searchQuery]);
 
   const handleRefresh = async () => {
     try {
@@ -38,52 +54,98 @@ export default function LeaderboardScreen() {
     }
   };
 
+  const handleUserPress = (user: any, displayRank: number) => {
+    router.push({
+      pathname: "/user-profile",
+      params: {
+        wallet: user.wallet,
+        username: user.username || "",
+        xp: user.xp.toString(),
+        level: (Math.floor(user.xp / 1000) + 1).toString(),
+        streak: (user.streak || 0).toString(),
+        rank: displayRank.toString(),
+        avatarUri: user.avatarUri || "",
+      },
+    });
+  };
+
   const renderLeaderboardRow = (_: any, index: number) => {
-    const user = users[index];
+    const user = filteredUsers[index];
     if (!user) return null;
 
     const isCurrentUser = user.wallet === address;
     const level = Math.floor(user.xp / 1000) + 1;
+    const globalIndex = users.indexOf(user);
+    const displayRank = globalIndex >= 0 ? globalIndex + 1 : index + 1;
 
     return (
-      <FadeInView key={user.wallet} index={index}>
-        <View
-          style={[styles.row, isCurrentUser && styles.currentUserRow]}
+      <FadeInView key={user.wallet} index={Math.min(index, 8)}>
+        <TouchableOpacity
+          onPress={() => handleUserPress(user, displayRank)}
+          activeOpacity={0.7}
         >
-          <View style={styles.rankContainer}>
-            <Text style={styles.rank}>#{index + 1}</Text>
-          </View>
-
-          <View style={styles.userInfo}>
-            <Text style={styles.username}>
-              {user.username || formatWalletAddress(user.wallet)}
-            </Text>
-            <Text style={styles.wallet}>{formatWalletAddress(user.wallet)}</Text>
-          </View>
-
-          <View style={styles.statsContainer}>
-            <View style={styles.statBox}>
-              <Text style={styles.statLabel}>Lvl</Text>
-              <Text style={styles.statValue}>{level}</Text>
+          <View style={[styles.row, isCurrentUser && styles.currentUserRow]}>
+            <View style={styles.rankContainer}>
+              <Text style={styles.rank}>#{displayRank}</Text>
             </View>
-            <View style={styles.statBox}>
-              <Text style={styles.statLabel}>XP</Text>
-              <Text style={styles.statValue}>{user.xp}</Text>
+
+            <UserAvatar
+              uri={(user as any).avatarUri || undefined}
+              name={user.username || user.wallet}
+              size={36}
+            />
+
+            <View style={styles.userInfo}>
+              <Text style={styles.username} numberOfLines={1}>
+                {user.username || formatWalletAddress(user.wallet)}
+              </Text>
+              <Text style={styles.wallet}>
+                {formatWalletAddress(user.wallet)}
+              </Text>
+            </View>
+
+            <View style={styles.statsContainer}>
+              <View style={styles.statBox}>
+                <Text style={styles.statLabel}>Lvl</Text>
+                <Text style={styles.statValue}>{level}</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={styles.statLabel}>XP</Text>
+                <Text style={styles.statValue}>{user.xp}</Text>
+              </View>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
       </FadeInView>
     );
   };
 
-  const itemCount = users.length + (hasMore && !isLoading ? 1 : 0);
-  const shouldShowLoadMore = hasMore && !isLoading && users.length > 0;
+  const itemCount = filteredUsers.length;
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Leaderboard</Text>
         <Text style={styles.subtitle}>Ranked by XP</Text>
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Text style={styles.searchIcon}>🔍</Text>
+        <TextInput
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Search by username or wallet..."
+          placeholderTextColor={T.textMuted}
+          style={styles.searchInput}
+          autoCorrect={false}
+          autoCapitalize="none"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery("")}>
+            <Text style={styles.clearBtn}>✕</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {error && (
@@ -97,12 +159,18 @@ export default function LeaderboardScreen() {
           <ActivityIndicator size="large" color={T.accent} />
           <Text style={styles.loadingText}>Loading leaderboard...</Text>
         </View>
-      ) : users.length === 0 ? (
+      ) : filteredUsers.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>🏆</Text>
-          <Text style={styles.emptyTitle}>No Users Yet</Text>
+          <Text style={styles.emptyIcon}>
+            {searchQuery.trim() ? "🔍" : "🏆"}
+          </Text>
+          <Text style={styles.emptyTitle}>
+            {searchQuery.trim() ? "No Results" : "No Users Yet"}
+          </Text>
           <Text style={styles.emptyText}>
-            Be the first to complete missions and join the leaderboard!
+            {searchQuery.trim()
+              ? "No users match your search. Try a different username or wallet address."
+              : "Be the first to complete missions and join the leaderboard!"}
           </Text>
         </View>
       ) : (
@@ -125,7 +193,7 @@ export default function LeaderboardScreen() {
         />
       )}
 
-      {shouldShowLoadMore && (
+      {hasMore && !isLoading && filteredUsers.length > 0 && !searchQuery.trim() && (
         <View style={styles.loadMoreContainer}>
           <ActivityIndicator size="small" color={T.accent} />
           <Text style={styles.loadMoreText}>Loading more...</Text>
@@ -143,7 +211,7 @@ const styles = {
     backgroundColor: T.bg,
   },
   header: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   title: {
     fontSize: 28,
@@ -154,6 +222,31 @@ const styles = {
     fontSize: 14,
     color: T.textSec,
     marginTop: 4,
+  },
+  searchContainer: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: T.surface,
+    borderRadius: T.r,
+    borderWidth: 1,
+    borderColor: T.border,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  searchIcon: {
+    fontSize: 16,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: T.text,
+  },
+  clearBtn: {
+    fontSize: 16,
+    color: T.textMuted,
+    padding: 4,
   },
   errorBox: {
     backgroundColor: T.errorBg,
@@ -187,7 +280,7 @@ const styles = {
     marginBottom: 8,
     borderWidth: 1,
     borderColor: T.border,
-    gap: 12,
+    gap: 10,
   },
   currentUserRow: {
     backgroundColor: T.accentBg,
@@ -195,7 +288,7 @@ const styles = {
     borderWidth: 2,
   },
   rankContainer: {
-    width: 40,
+    width: 36,
     alignItems: "center" as const,
   },
   rank: {

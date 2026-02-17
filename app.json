@@ -68,6 +68,19 @@
             "backgroundColor": "#0D1117"
           }
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/vpicon.png",
+          "color": "#3FB950"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "VibeProof needs access to your photos to set a profile picture."
+        }
       ]
     ],
 

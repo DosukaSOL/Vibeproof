@@ -3,8 +3,10 @@
  * User identity, wallet, and stats
  */
 import { AnimatedPressable } from "@/components/AnimatedPressable";
+import { AvatarPicker } from "@/components/AvatarPicker";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { FadeInView } from "@/components/FadeInView";
+import { ShareStatsCard } from "@/components/ShareStatsCard";
 import { StatsPanel } from "@/components/StatsPanel";
 import { StreakCard } from "@/components/StreakCard";
 import { WalletButton } from "@/components/WalletButton";
@@ -13,21 +15,22 @@ import { useUser } from "@/hooks/useUser";
 import { useWallet } from "@/hooks/useWallet";
 import { useXLink } from "@/hooks/useXLink";
 import { hapticSuccess } from "@/lib/haptics";
+import { setupDailyReminder } from "@/lib/notifications";
 import { T } from "@/lib/theme";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    RefreshControl,
-    ScrollView,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 export default function ProfileScreen() {
   const { address, isConnected } = useWallet();
-  const { user, isLoading, error, setUsername, refresh } = useUser(
+  const { user, isLoading, error, setUsername, setAvatar, refresh } = useUser(
     isConnected ? address : null
   );
   const xLink = useXLink(isConnected ? address : null);
@@ -42,6 +45,13 @@ export default function ProfileScreen() {
       setNewUsername(user.username);
     }
   }, [user?.username]);
+
+  // Setup daily notification when connected
+  useEffect(() => {
+    if (isConnected && user) {
+      setupDailyReminder();
+    }
+  }, [isConnected, user]);
 
   const validateUsername = (username: string): boolean => {
     if (!username.trim()) return false;
@@ -72,6 +82,15 @@ export default function ProfileScreen() {
       Alert.alert("Error", err?.message || "Failed to update username");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleAvatarPicked = async (uri: string) => {
+    try {
+      await setAvatar(uri);
+      await hapticSuccess();
+    } catch (err: any) {
+      Alert.alert("Error", err?.message || "Failed to save photo");
     }
   };
 
@@ -111,6 +130,20 @@ export default function ProfileScreen() {
         />
       </FadeInView>
 
+      {/* Avatar */}
+      {isConnected && user && (
+        <FadeInView index={2}>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Profile Photo</Text>
+            <AvatarPicker
+              uri={user.avatarUri}
+              name={user.username || user.wallet}
+              onPicked={handleAvatarPicked}
+            />
+          </View>
+        </FadeInView>
+      )}
+
       {error && (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{error}</Text>
@@ -118,27 +151,27 @@ export default function ProfileScreen() {
       )}
 
       {/* Stats Section */}
-      <FadeInView index={2}>
+      <FadeInView index={3}>
         <StatsPanel user={user} isLoading={isLoading} />
       </FadeInView>
 
       {/* Streak Card */}
       {isConnected && user && (
-        <FadeInView index={3}>
+        <FadeInView index={4}>
           <StreakCard user={user} />
         </FadeInView>
       )}
 
       {/* X Account Linking */}
       {isConnected && (
-        <FadeInView index={4}>
+        <FadeInView index={5}>
           <XLinkCard xLink={xLink} />
         </FadeInView>
       )}
 
       {/* Username Section */}
       {isConnected && (
-        <FadeInView index={5}>
+        <FadeInView index={6}>
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Username</Text>
             <TextInput
@@ -172,8 +205,15 @@ export default function ProfileScreen() {
         </FadeInView>
       )}
 
+      {/* Share Achievement Card */}
+      {isConnected && user && (
+        <FadeInView index={7}>
+          <ShareStatsCard user={user} />
+        </FadeInView>
+      )}
+
       {/* Info Section */}
-      <FadeInView index={6}>
+      <FadeInView index={8}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>About</Text>
           <Text style={styles.infoText}>

@@ -8,21 +8,36 @@ import { FadeInView } from "@/components/FadeInView";
 import { MissionTab, useMissionEngine } from "@/hooks/useMissionEngine";
 import { useWallet } from "@/hooks/useWallet";
 import { hapticSelection } from "@/lib/haptics";
+import { MISSION_TAG_META, MissionTag } from "@/lib/missionTemplates";
 import { T } from "@/lib/theme";
-import React, { useState } from "react";
+import { useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    RefreshControl,
-    ScrollView,
-    Text,
-    View,
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+
+const ALL_TAGS: (MissionTag | "all")[] = ["all", "on-chain", "social", "app", "defi"];
 
 export default function MissionsScreen() {
   const { address, isConnected } = useWallet();
   const engine = useMissionEngine(isConnected ? address : null);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<MissionTag | "all">("all");
+
+  const filteredRepeatable = useMemo(() => {
+    if (activeFilter === "all") return engine.repeatableMissions;
+    return engine.repeatableMissions.filter((m) => m.tag === activeFilter);
+  }, [engine.repeatableMissions, activeFilter]);
+
+  const filteredOneTime = useMemo(() => {
+    if (activeFilter === "all") return engine.oneTimeMissions;
+    return engine.oneTimeMissions.filter((m) => m.tag === activeFilter);
+  }, [engine.oneTimeMissions, activeFilter]);
 
   const handleRefresh = async () => {
     try {
@@ -53,8 +68,8 @@ export default function MissionsScreen() {
     );
   }
 
-  const repeatableCount = engine.repeatableMissions.length;
-  const oneTimeCount = engine.oneTimeMissions.length;
+  const repeatableCount = filteredRepeatable.length;
+  const oneTimeCount = filteredOneTime.length;
   const isRepeatable = engine.activeTab === "repeatable";
 
   return (
@@ -68,6 +83,37 @@ export default function MissionsScreen() {
         <Text style={styles.title}>Missions</Text>
         <Text style={styles.subtitle}>Earn XP by completing actions</Text>
       </View>
+
+      {/* Category Filter Chips */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterContent}>
+        {ALL_TAGS.map((tag) => {
+          const isActive = activeFilter === tag;
+          const meta = tag === "all" ? null : MISSION_TAG_META[tag];
+          return (
+            <TouchableOpacity
+              key={tag}
+              onPress={() => { hapticSelection(); setActiveFilter(tag); }}
+              activeOpacity={0.7}
+              style={[
+                styles.filterChip,
+                isActive && {
+                  backgroundColor: meta ? meta.bg : T.accentBg,
+                  borderColor: meta ? meta.color : T.accent,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  isActive && { color: meta ? meta.color : T.accent },
+                ]}
+              >
+                {tag === "all" ? "All" : `${meta!.icon} ${meta!.label}`}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
 
       {/* Tab Selector */}
       <View style={styles.tabContainer}>
@@ -126,7 +172,7 @@ export default function MissionsScreen() {
           </View>
         ) : (
           <View style={styles.missionsGrid}>
-            {engine.repeatableMissions.map((mission, index) => (
+            {filteredRepeatable.map((mission, index) => (
               <FadeInView key={mission.id} index={index}>
                 <EngineMissionCard
                   mission={mission}
@@ -160,7 +206,7 @@ export default function MissionsScreen() {
           </View>
         ) : (
           <View style={styles.missionsGrid}>
-            {engine.oneTimeMissions.map((template, index) => (
+            {filteredOneTime.map((template, index) => (
               <FadeInView key={template.id} index={index}>
                 <EngineMissionCard
                   mission={template}
@@ -197,6 +243,27 @@ const styles = {
     fontSize: 14,
     color: T.textSec,
     marginTop: 4,
+  },
+  filterScroll: {
+    marginBottom: 12,
+    flexGrow: 0,
+  },
+  filterContent: {
+    gap: 8,
+    paddingRight: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: T.rL,
+    borderWidth: 1,
+    borderColor: T.border,
+    backgroundColor: T.surface,
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: "600" as const,
+    color: T.textMuted,
   },
   tabContainer: {
     flexDirection: "row" as const,
