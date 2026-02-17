@@ -1,7 +1,7 @@
 /**
  * Authentication & Session Management
  */
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { secureGet, secureRemove, secureSet } from "./secureStorage";
 
 const SESSION_KEY = "vibeproof_session";
 
@@ -17,7 +17,7 @@ export type Session = {
 export async function saveSession(session: Session): Promise<void> {
   try {
     // Store session in AsyncStorage (compatible with all platforms)
-    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    await secureSet(SESSION_KEY, JSON.stringify(session));
   } catch (error) {
     console.error("[Auth] Failed to save session:", error);
     throw error;
@@ -29,7 +29,7 @@ export async function saveSession(session: Session): Promise<void> {
  */
 export async function loadSession(): Promise<Session | null> {
   try {
-    const sessionStr = await AsyncStorage.getItem(SESSION_KEY);
+    const sessionStr = await secureGet(SESSION_KEY);
     if (!sessionStr) return null;
 
     const session: Session = JSON.parse(sessionStr);
@@ -58,7 +58,7 @@ export async function getStoredWallet(): Promise<string | null> {
  */
 export async function clearSession(): Promise<void> {
   try {
-    await AsyncStorage.removeItem(SESSION_KEY);
+    await secureRemove(SESSION_KEY);
   } catch (error) {
     console.error("[Auth] Failed to clear session:", error);
     throw error;

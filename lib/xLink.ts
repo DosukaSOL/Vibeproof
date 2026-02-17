@@ -3,8 +3,8 @@
  * OAuth 2.0 PKCE flow for linking X accounts to wallet profiles.
  * Supabase is lazy-loaded to prevent crashes during module initialization.
  */
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CONFIG } from "./config";
+import { secureGet, secureRemove, secureSet } from "./secureStorage";
 
 // Lazy Supabase getter — only loaded when actually calling DB functions
 function getSupabase() {
@@ -36,7 +36,7 @@ export interface XLinkStatus {
  * Store X link data locally (tokens + profile info)
  */
 export async function saveXLink(data: XLinkData): Promise<void> {
-  await AsyncStorage.setItem(X_STORAGE_KEY, JSON.stringify(data));
+  await secureSet(X_STORAGE_KEY, JSON.stringify(data));
 }
 
 /**
@@ -44,7 +44,7 @@ export async function saveXLink(data: XLinkData): Promise<void> {
  */
 export async function loadXLink(): Promise<XLinkData | null> {
   try {
-    const raw = await AsyncStorage.getItem(X_STORAGE_KEY);
+    const raw = await secureGet(X_STORAGE_KEY);
     if (!raw) return null;
     return JSON.parse(raw) as XLinkData;
   } catch {
@@ -56,7 +56,7 @@ export async function loadXLink(): Promise<XLinkData | null> {
  * Clear X link data locally
  */
 export async function clearXLink(): Promise<void> {
-  await AsyncStorage.removeItem(X_STORAGE_KEY);
+  await secureRemove(X_STORAGE_KEY);
 }
 
 // ─── Supabase Social Links ──────────────────────────

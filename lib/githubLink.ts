@@ -3,8 +3,8 @@
  * OAuth 2.0 web flow for linking GitHub accounts to wallet profiles.
  * Supabase is lazy-loaded to prevent crashes during module initialization.
  */
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CONFIG } from "./config";
+import { secureGet, secureRemove, secureSet } from "./secureStorage";
 
 function getSupabase() {
   return require("./supabase").supabase;
@@ -30,12 +30,12 @@ export interface GitHubLinkStatus {
 // ─── Local Storage ───────────────────────────────────
 
 export async function saveGitHubLink(data: GitHubLinkData): Promise<void> {
-  await AsyncStorage.setItem(GH_STORAGE_KEY, JSON.stringify(data));
+  await secureSet(GH_STORAGE_KEY, JSON.stringify(data));
 }
 
 export async function loadGitHubLink(): Promise<GitHubLinkData | null> {
   try {
-    const raw = await AsyncStorage.getItem(GH_STORAGE_KEY);
+    const raw = await secureGet(GH_STORAGE_KEY);
     if (!raw) return null;
     return JSON.parse(raw) as GitHubLinkData;
   } catch {
@@ -44,7 +44,7 @@ export async function loadGitHubLink(): Promise<GitHubLinkData | null> {
 }
 
 export async function clearGitHubLink(): Promise<void> {
-  await AsyncStorage.removeItem(GH_STORAGE_KEY);
+  await secureRemove(GH_STORAGE_KEY);
 }
 
 // ─── Supabase Social Links ──────────────────────────
