@@ -12,6 +12,7 @@ export interface LeaderboardUser {
   streak: number;
   rank: number;
   level: number;
+  avatarUri?: string;
 }
 
 export function useLeaderboard(walletAddress: string | null) {
@@ -33,7 +34,7 @@ export function useLeaderboard(walletAddress: string | null) {
         const { supabase } = require("@/lib/supabase");
         const { data, error: dbError } = await supabase
           .from("users")
-          .select("wallet, username, xp, streak, rank, level")
+          .select("*")
           .order("xp", { ascending: false })
           .limit(50);
         if (!dbError && data && data.length > 0) {
@@ -44,6 +45,7 @@ export function useLeaderboard(walletAddress: string | null) {
             streak: u.streak || 0,
             rank: idx + 1,
             level: Math.floor((u.xp || 0) / 1000) + 1,
+            avatarUri: u.avatar_url || undefined,
           }));
           fromSupabase = true;
         }
@@ -63,6 +65,7 @@ export function useLeaderboard(walletAddress: string | null) {
               streak: localUser.streak,
               rank: 1,
               level: localUser.level,
+              avatarUri: localUser.avatarUri || undefined,
             },
           ];
         }

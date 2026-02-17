@@ -114,7 +114,8 @@ export function useUser(walletAddress: string | null) {
   }, [walletAddress]);
 
   /**
-   * Update user's avatar
+   * Update user's avatar — saves locally first, then uploads to Supabase
+   * so other users see it on the leaderboard.
    */
   const setAvatar = useCallback(
     async (uri: string) => {
@@ -122,8 +123,38 @@ export function useUser(walletAddress: string | null) {
         throw new Error("Wallet not connected");
       }
       try {
+        // 1. Save local URI immediately for instant display
         const updated = await updateAvatarUri(walletAddress, uri);
         setState((prev) => ({ ...prev, user: updated }));
+
+        // 2. Upload to Supabase Storage in background (non-blocking)
+        (async () => {
+          try {
+            const { uploadAvatar } = require("@/lib/avatarUpload");
+            const publicUrl = await uploadAvatar(walletAddress, uri);
+            if (publicUrl) {
+              // Replace local URI with public URL so it syncs everywhere
+              const updated2 = await updateAvatarUri(walletAddress, publicUrl);
+              setState((prev) => ({ ...prev, user: updated2 }));
+
+              // Sync public URL to Supabase users table
+              try {
+                const { supabase } = require("@/lib/supabase");
+                await supabase.from("users").upsert(
+                  {
+                    wallet: walletAddress,
+                    avatar_url: publicUrl,
+                    updated_at: new Date().toISOString(),
+                  },
+                  { onConflict: "wallet" }
+                );
+              } catch {}
+            }
+          } catch (err: any) {
+            console.warn("[useUser] avatar upload failed:", err?.message);
+          }
+        })();
+
         return updated;
       } catch (error: any) {
         console.warn("[useUser] setAvatar error:", error?.message);
@@ -150,16 +181,18 @@ export function useUser(walletAddress: string | null) {
 async function trySyncToSupabase(wallet: string, user: LocalUser) {
   try {
     const { supabase } = require("@/lib/supabase");
-    await supabase.from("users").upsert(
-      {
-        wallet,
-        username: user.username || null,
-        xp: user.xp,
-        streak: user.streak,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "wallet" }
-    );
+    const payload: Record<string, any> = {
+      wallet,
+      username: user.username || null,
+      xp: user.xp,
+      streak: user.streak,
+      updated_at: new Date().toISOString(),
+    };
+    // Only sync avatar if it's a public URL (not a local file:// path)
+    if (user.avatarUri?.startsWith("http")) {
+      payload.avatar_url = user.avatarUri;
+    }
+    await supabase.from("users").upsert(payload, { onConflict: "wallet" });
   } catch {
     // Supabase not available — that's fine, local data is the source of truth
   }
