@@ -4,6 +4,8 @@
  * No Supabase dependency — works fully offline.
  */
 
+export type MissionTag = "on-chain" | "social" | "app" | "defi";
+
 export interface MissionTemplate {
   id: string;
   title: string;
@@ -14,7 +16,39 @@ export interface MissionTemplate {
   xp_reward: number;
   icon: string;
   requires_social?: string;
+  tag: MissionTag;
 }
+
+/** Category metadata for display */
+export const MISSION_TAG_META: Record<
+  MissionTag,
+  { label: string; color: string; bg: string; icon: string }
+> = {
+  "on-chain": {
+    label: "On-Chain",
+    color: "#58A6FF",
+    bg: "rgba(88, 166, 255, 0.12)",
+    icon: "⛓️",
+  },
+  social: {
+    label: "Social",
+    color: "#BC8CFF",
+    bg: "rgba(188, 140, 255, 0.12)",
+    icon: "💬",
+  },
+  app: {
+    label: "App",
+    color: "#3FB950",
+    bg: "rgba(63, 185, 80, 0.12)",
+    icon: "📱",
+  },
+  defi: {
+    label: "DeFi",
+    color: "#F0883E",
+    bg: "rgba(240, 136, 62, 0.12)",
+    icon: "💰",
+  },
+};
 
 // ─── Daily Mission Pool (rotate each day) ───────────────
 
@@ -29,6 +63,7 @@ const DAILY_POOL: MissionTemplate[] = [
     verification_config: { window_hours: 24 },
     xp_reward: 100,
     icon: "⛓️",
+    tag: "on-chain",
   },
   {
     id: "daily_balance",
@@ -40,6 +75,7 @@ const DAILY_POOL: MissionTemplate[] = [
     verification_config: { min_balance: 0.01 },
     xp_reward: 50,
     icon: "💰",
+    tag: "defi",
   },
   {
     id: "daily_tweet",
@@ -55,6 +91,7 @@ const DAILY_POOL: MissionTemplate[] = [
     xp_reward: 150,
     icon: "𝕏",
     requires_social: "x",
+    tag: "social",
   },
   {
     id: "daily_checkin",
@@ -65,6 +102,7 @@ const DAILY_POOL: MissionTemplate[] = [
     verification_config: { action: "daily_checkin" },
     xp_reward: 25,
     icon: "📱",
+    tag: "app",
   },
 
   {
@@ -76,6 +114,7 @@ const DAILY_POOL: MissionTemplate[] = [
     verification_config: { window_hours: 24 },
     xp_reward: 100,
     icon: "🌐",
+    tag: "defi",
   },
   {
     id: "daily_transfer",
@@ -86,6 +125,7 @@ const DAILY_POOL: MissionTemplate[] = [
     verification_config: { window_hours: 24 },
     xp_reward: 80,
     icon: "💸",
+    tag: "on-chain",
   },
 ];
 
@@ -101,6 +141,7 @@ const ONE_TIME_MISSIONS: MissionTemplate[] = [
     verification_config: { action: "first_connect" },
     xp_reward: 200,
     icon: "🔗",
+    tag: "app",
   },
   {
     id: "ot_username",
@@ -111,6 +152,7 @@ const ONE_TIME_MISSIONS: MissionTemplate[] = [
     verification_config: { action: "set_username" },
     xp_reward: 100,
     icon: "✏️",
+    tag: "app",
   },
   {
     id: "ot_link_x",
@@ -122,6 +164,7 @@ const ONE_TIME_MISSIONS: MissionTemplate[] = [
     verification_config: { provider: "x" },
     xp_reward: 200,
     icon: "𝕏",
+    tag: "social",
   },
 
   {
@@ -134,6 +177,7 @@ const ONE_TIME_MISSIONS: MissionTemplate[] = [
     xp_reward: 100,
     icon: "👥",
     requires_social: "x",
+    tag: "social",
   },
   {
     id: "ot_first_tweet",
@@ -148,6 +192,7 @@ const ONE_TIME_MISSIONS: MissionTemplate[] = [
     xp_reward: 200,
     icon: "📝",
     requires_social: "x",
+    tag: "social",
   },
   {
     id: "ot_diamond_hands",
@@ -158,6 +203,7 @@ const ONE_TIME_MISSIONS: MissionTemplate[] = [
     verification_config: { min_balance: 0.1 },
     xp_reward: 250,
     icon: "💎",
+    tag: "defi",
   },
 ];
 

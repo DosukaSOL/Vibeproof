@@ -6,6 +6,7 @@ import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { FadeInView } from "@/components/FadeInView";
 import { StatsPanel } from "@/components/StatsPanel";
+import { StreakCard } from "@/components/StreakCard";
 import { WalletButton } from "@/components/WalletButton";
 import { XLinkCard } from "@/components/XLinkCard";
 import { useUser } from "@/hooks/useUser";
@@ -13,7 +14,7 @@ import { useWallet } from "@/hooks/useWallet";
 import { useXLink } from "@/hooks/useXLink";
 import { hapticSuccess } from "@/lib/haptics";
 import { T } from "@/lib/theme";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -121,16 +122,23 @@ export default function ProfileScreen() {
         <StatsPanel user={user} isLoading={isLoading} />
       </FadeInView>
 
+      {/* Streak Card */}
+      {isConnected && user && (
+        <FadeInView index={3}>
+          <StreakCard user={user} />
+        </FadeInView>
+      )}
+
       {/* X Account Linking */}
       {isConnected && (
-        <FadeInView index={3}>
+        <FadeInView index={4}>
           <XLinkCard xLink={xLink} />
         </FadeInView>
       )}
 
       {/* Username Section */}
       {isConnected && (
-        <FadeInView index={4}>
+        <FadeInView index={5}>
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Username</Text>
             <TextInput
@@ -165,7 +173,7 @@ export default function ProfileScreen() {
       )}
 
       {/* Info Section */}
-      <FadeInView index={5}>
+      <FadeInView index={6}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>About</Text>
           <Text style={styles.infoText}>
