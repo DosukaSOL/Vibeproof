@@ -1,20 +1,43 @@
 /**
  * Secure Storage Wrapper
  *
- * Uses expo-secure-store (Keychain / encrypted SharedPreferences)
+ * Tries expo-secure-store (Keychain / encrypted SharedPreferences)
  * for sensitive data like OAuth tokens and session info.
+ * Falls back gracefully to AsyncStorage if the native module is
+ * unavailable, so the app never crashes on startup.
  *
  * Includes transparent migration from plain AsyncStorage so
  * existing users don't lose their linked accounts on update.
  */
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as SecureStore from "expo-secure-store";
+
+// Lazy-load SecureStore to avoid crash if native module isn't ready
+let _SecureStore: typeof import("expo-secure-store") | null = null;
+function getSecureStore() {
+  if (_SecureStore === null) {
+    try {
+      _SecureStore = require("expo-secure-store");
+    } catch {
+      _SecureStore = undefined as any; // mark as attempted
+    }
+  }
+  return _SecureStore || null;
+}
 
 /**
- * Save a value to the secure store (hardware-backed encryption).
+ * Save a value — SecureStore when available, AsyncStorage as fallback.
  */
 export async function secureSet(key: string, value: string): Promise<void> {
-  await SecureStore.setItemAsync(key, value);
+  const ss = getSecureStore();
+  if (ss) {
+    try {
+      await ss.setItemAsync(key, value);
+      return;
+    } catch {
+      // SecureStore write failed — fall through to AsyncStorage
+    }
+  }
+  await AsyncStorage.setItem(key, value);
 }
 
 /**
@@ -22,32 +45,48 @@ export async function secureSet(key: string, value: string): Promise<void> {
  * Falls back to AsyncStorage for one-time migration of legacy data.
  */
 export async function secureGet(key: string): Promise<string | null> {
-  // Try secure store first
-  const secure = await SecureStore.getItemAsync(key);
-  if (secure) return secure;
+  const ss = getSecureStore();
 
-  // Fallback: migrate from legacy AsyncStorage
-  try {
-    const legacy = await AsyncStorage.getItem(key);
-    if (legacy) {
-      // Move to secure store and remove from AsyncStorage
-      await SecureStore.setItemAsync(key, legacy);
-      await AsyncStorage.removeItem(key);
-      return legacy;
+  // Try secure store first
+  if (ss) {
+    try {
+      const secure = await ss.getItemAsync(key);
+      if (secure) return secure;
+    } catch {
+      // SecureStore read failed — continue to AsyncStorage
     }
-  } catch {
-    // Ignore migration errors — treat as empty
   }
 
-  return null;
+  // Fallback / migration: read from AsyncStorage
+  try {
+    const legacy = await AsyncStorage.getItem(key);
+    if (legacy && ss) {
+      // Migrate to secure store and clean up
+      try {
+        await ss.setItemAsync(key, legacy);
+        await AsyncStorage.removeItem(key);
+      } catch {
+        // Migration failed — data stays in AsyncStorage, still usable
+      }
+    }
+    return legacy;
+  } catch {
+    return null;
+  }
 }
 
 /**
  * Delete a value from both secure store and AsyncStorage (belt & suspenders).
  */
 export async function secureRemove(key: string): Promise<void> {
-  await SecureStore.deleteItemAsync(key);
-  // Also clean up any legacy AsyncStorage entry
+  const ss = getSecureStore();
+  if (ss) {
+    try {
+      await ss.deleteItemAsync(key);
+    } catch {
+      // Best-effort
+    }
+  }
   try {
     await AsyncStorage.removeItem(key);
   } catch {
