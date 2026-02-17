@@ -20,7 +20,7 @@ import {
   View,
 } from "react-native";
 
-const ALL_TAGS: (MissionTag | "all")[] = ["all", "on-chain", "social", "app", "defi"];
+const ALL_TAGS: (MissionTag | "all")[] = ["all", "on-chain", "social", "app", "defi", "github"];
 
 export default function MissionsScreen() {
   const { address, isConnected } = useWallet();

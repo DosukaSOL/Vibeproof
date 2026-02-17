@@ -33,7 +33,7 @@ export interface LocalCompletion {
 }
 
 export interface SocialLink {
-  provider: "x" | "telegram" | "discord";
+  provider: "x" | "telegram" | "discord" | "github";
   username: string;
   userId?: string;
   linkedAt: string;

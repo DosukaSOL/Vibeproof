@@ -46,12 +46,14 @@ export function EngineMissionCard({
   const isAutoVerifiable =
     mission.verification_type.startsWith("on_chain_") ||
     mission.verification_type.startsWith("x_") ||
+    mission.verification_type.startsWith("github_") ||
     mission.verification_type === "app_action";
 
   const getMissionIcon = () => {
     const type = mission.verification_type;
     if (type.startsWith("on_chain_")) return "⛓️";
     if (type.startsWith("x_")) return "𝕏";
+    if (type.startsWith("github_")) return "🐙";
     if (type === "app_action") return "📱";
     if (type === "manual") return "📝";
     return "⭐";

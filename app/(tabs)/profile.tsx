@@ -6,11 +6,13 @@ import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { AvatarPicker } from "@/components/AvatarPicker";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { FadeInView } from "@/components/FadeInView";
+import { GitHubLinkCard } from "@/components/GitHubLinkCard";
 import { ShareStatsCard } from "@/components/ShareStatsCard";
 import { StatsPanel } from "@/components/StatsPanel";
 import { StreakCard } from "@/components/StreakCard";
 import { WalletButton } from "@/components/WalletButton";
 import { XLinkCard } from "@/components/XLinkCard";
+import { useGitHubLink } from "@/hooks/useGitHubLink";
 import { useUser } from "@/hooks/useUser";
 import { useWallet } from "@/hooks/useWallet";
 import { useXLink } from "@/hooks/useXLink";
@@ -34,6 +36,7 @@ export default function ProfileScreen() {
     isConnected ? address : null
   );
   const xLink = useXLink(isConnected ? address : null);
+  const gitHubLink = useGitHubLink(isConnected ? address : null);
 
   const [newUsername, setNewUsername] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -169,9 +172,16 @@ export default function ProfileScreen() {
         </FadeInView>
       )}
 
-      {/* Username Section */}
+      {/* GitHub Account Linking */}
       {isConnected && (
         <FadeInView index={6}>
+          <GitHubLinkCard gitHubLink={gitHubLink} />
+        </FadeInView>
+      )}
+
+      {/* Username Section */}
+      {isConnected && (
+        <FadeInView index={7}>
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Username</Text>
             <TextInput
@@ -207,13 +217,13 @@ export default function ProfileScreen() {
 
       {/* Share Achievement Card */}
       {isConnected && user && (
-        <FadeInView index={7}>
+        <FadeInView index={8}>
           <ShareStatsCard user={user} />
         </FadeInView>
       )}
 
       {/* Info Section */}
-      <FadeInView index={8}>
+      <FadeInView index={9}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>About</Text>
           <Text style={styles.infoText}>
