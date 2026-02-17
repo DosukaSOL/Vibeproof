@@ -75,6 +75,10 @@ export function useUser(walletAddress: string | null) {
           user: updated,
           isLoading: false,
         }));
+
+        // Sync updated username to Supabase in background
+        trySyncToSupabase(walletAddress, updated);
+
         return updated;
       } catch (error: any) {
         const message = error?.message || "Failed to update username";
@@ -188,8 +192,11 @@ async function trySyncToSupabase(wallet: string, user: LocalUser) {
       streak: user.streak,
       updated_at: new Date().toISOString(),
     };
-    // Only sync avatar if it's a public URL (not a local file:// path)
-    if (user.avatarUri?.startsWith("http")) {
+    // Sync avatar if it's a public URL or a base64 data URI (not a local file:// path)
+    if (
+      user.avatarUri?.startsWith("http") ||
+      user.avatarUri?.startsWith("data:")
+    ) {
       payload.avatar_url = user.avatarUri;
     }
     await supabase.from("users").upsert(payload, { onConflict: "wallet" });

@@ -71,6 +71,46 @@ export function useLeaderboard(walletAddress: string | null) {
         }
       }
 
+      // Merge current user's local data so their username/avatar is always fresh
+      if (fromSupabase && walletAddress) {
+        try {
+          const localUser = await getLocalUser(walletAddress);
+          if (localUser) {
+            const idx = leaderboardUsers.findIndex(
+              (u) => u.wallet === walletAddress
+            );
+            if (idx >= 0) {
+              // Overlay local username and avatar onto Supabase data
+              if (localUser.username) {
+                leaderboardUsers[idx].username = localUser.username;
+              }
+              if (localUser.avatarUri) {
+                leaderboardUsers[idx].avatarUri = localUser.avatarUri;
+              }
+              if (localUser.xp > leaderboardUsers[idx].xp) {
+                leaderboardUsers[idx].xp = localUser.xp;
+              }
+            } else {
+              // Current user not in Supabase yet — add them
+              leaderboardUsers.push({
+                wallet: localUser.wallet,
+                username: localUser.username || "",
+                xp: localUser.xp,
+                streak: localUser.streak,
+                rank: leaderboardUsers.length + 1,
+                level: Math.floor(localUser.xp / 1000) + 1,
+                avatarUri: localUser.avatarUri || undefined,
+              });
+              // Re-sort by XP
+              leaderboardUsers.sort((a, b) => b.xp - a.xp);
+              leaderboardUsers.forEach((u, i) => (u.rank = i + 1));
+            }
+          }
+        } catch {
+          // Non-fatal — local merge failed
+        }
+      }
+
       let rank = 0;
       if (walletAddress) {
         const idx = leaderboardUsers.findIndex(

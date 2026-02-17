@@ -3,13 +3,13 @@
  * Reusable avatar circle — shows profile photo or fallback initials.
  * Uses expo-image for efficient caching.
  */
-import { Text, View, ViewStyle } from "react-native";
+import { Image as RNImage, Text, View, ViewStyle } from "react-native";
 
 let ExpoImage: any = null;
 try {
   ExpoImage = require("expo-image").Image;
 } catch {
-  // expo-image not available
+  // expo-image not available — will use RN Image fallback
 }
 
 interface UserAvatarProps {
@@ -23,14 +23,26 @@ export function UserAvatar({ uri, name, size = 48, style }: UserAvatarProps) {
   const initials = getInitials(name);
   const fontSize = Math.max(size * 0.38, 12);
 
-  if (uri && ExpoImage) {
+  if (uri) {
+    if (ExpoImage) {
+      return (
+        <View style={[{ width: size, height: size, borderRadius: size / 2, overflow: "hidden" }, style]}>
+          <ExpoImage
+            source={{ uri }}
+            style={{ width: size, height: size }}
+            contentFit="cover"
+            transition={200}
+          />
+        </View>
+      );
+    }
+    // Fallback: React Native Image (supports data: and http: URIs)
     return (
       <View style={[{ width: size, height: size, borderRadius: size / 2, overflow: "hidden" }, style]}>
-        <ExpoImage
+        <RNImage
           source={{ uri }}
           style={{ width: size, height: size }}
-          contentFit="cover"
-          transition={200}
+          resizeMode="cover"
         />
       </View>
     );
