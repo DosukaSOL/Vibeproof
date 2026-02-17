@@ -178,7 +178,6 @@ export default function LeaderboardScreen() {
           data={Array.from({ length: itemCount })}
           renderItem={({ index }) => renderLeaderboardRow({}, index)}
           keyExtractor={(_, index) => index.toString()}
-          scrollEnabled={false}
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
