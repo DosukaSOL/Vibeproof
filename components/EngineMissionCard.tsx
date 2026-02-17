@@ -6,9 +6,9 @@
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { SPRING } from "@/lib/animations";
 import { hapticError, hapticXpGained } from "@/lib/haptics";
-import { MissionTemplate } from "@/lib/missionTemplates";
+import { MISSION_TAG_META, MissionTemplate } from "@/lib/missionTemplates";
 import { T } from "@/lib/theme";
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -128,9 +128,24 @@ export function EngineMissionCard({
               {statusBadge.text}
             </Text>
           )}
-          {isOneTime && !isCompleted && (
-            <Text style={styles.oneTimeBadge}>One-time</Text>
-          )}
+          <View style={styles.badgeRow}>
+            {mission.tag && MISSION_TAG_META[mission.tag] && (
+              <Text
+                style={[
+                  styles.tagBadge,
+                  {
+                    color: MISSION_TAG_META[mission.tag].color,
+                    backgroundColor: MISSION_TAG_META[mission.tag].bg,
+                  },
+                ]}
+              >
+                {MISSION_TAG_META[mission.tag].icon} {MISSION_TAG_META[mission.tag].label}
+              </Text>
+            )}
+            {isOneTime && !isCompleted && (
+              <Text style={styles.oneTimeBadge}>One-time</Text>
+            )}
+          </View>
         </View>
       </View>
 
@@ -235,6 +250,19 @@ const styles = {
     fontSize: 12,
     fontWeight: "600" as const,
   },
+  badgeRow: {
+    flexDirection: "row" as const,
+    gap: 6,
+    flexWrap: "wrap" as const,
+  },
+  tagBadge: {
+    fontSize: 11,
+    fontWeight: "600" as const,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: "hidden" as const,
+  },
   oneTimeBadge: {
     fontSize: 11,
     color: T.purple,
@@ -243,7 +271,6 @@ const styles = {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    alignSelf: "flex-start" as const,
     overflow: "hidden" as const,
   },
   description: {

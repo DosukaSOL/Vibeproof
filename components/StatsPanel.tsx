@@ -1,11 +1,12 @@
 /**
  * StatsPanel Component
- * Display user stats and progression
+ * Display user stats and progression with animated counters + XP progress bar
  */
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { LocalUser } from "@/lib/localStore";
 import { T } from "@/lib/theme";
-import React from "react";
-import { Text, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { Animated, Easing, Text, View } from "react-native";
 
 interface StatsPanelProps {
   user: LocalUser | null;
@@ -23,36 +24,92 @@ export function StatsPanel({ user, isLoading }: StatsPanelProps) {
     );
   }
 
+  const xpInLevel = user.xp % 1000;
+  const xpProgress = xpInLevel / 1000;
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Your Stats</Text>
 
+      {/* XP Progress Bar */}
+      <View style={styles.xpBarSection}>
+        <View style={styles.xpBarHeader}>
+          <AnimatedNumber
+            value={user.xp}
+            style={styles.xpTotal}
+            suffix=" XP"
+            duration={1000}
+          />
+          <Text style={styles.xpLevelLabel}>
+            Level {user.level} → {user.level + 1}
+          </Text>
+        </View>
+        <View style={styles.xpBarTrack}>
+          <XpBarFill progress={xpProgress} />
+        </View>
+        <Text style={styles.xpBarSubtext}>
+          {xpInLevel} / 1,000 XP to next level
+        </Text>
+      </View>
+
       <View style={styles.gridContainer}>
-        <StatItem
-          label="Level"
-          value={user.level.toString()}
-          icon="📈"
-        />
-        <StatItem label="XP" value={user.xp.toString()} icon="⭐" />
-        <StatItem label="Rank" value={`#${user.rank}`} icon="🏆" />
-        <StatItem label="Streak" value={user.streak.toString()} icon="🔥" />
-        <StatItem label="Missions" value={user.missionsCompleted.toString()} icon="🎯" />
+        <StatItem label="Level" value={user.level} icon="📈" />
+        <StatItem label="XP" value={user.xp} icon="⭐" />
+        <StatItem label="Rank" value={user.rank} icon="🏆" prefix="#" />
+        <StatItem label="Streak" value={user.streak} icon="🔥" suffix="d" />
+        <StatItem label="Missions" value={user.missionsCompleted} icon="🎯" />
       </View>
     </View>
   );
 }
 
-interface StatItemProps {
-  label: string;
-  value: string;
-  icon: string;
+/** Animated XP progress bar fill */
+function XpBarFill({ progress }: { progress: number }) {
+  const width = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(width, {
+      toValue: progress,
+      duration: 1000,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [progress]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.xpBarFill,
+        {
+          width: width.interpolate({
+            inputRange: [0, 1],
+            outputRange: ["0%", "100%"],
+          }),
+        },
+      ]}
+    />
+  );
 }
 
-function StatItem({ label, value, icon }: StatItemProps) {
+interface StatItemProps {
+  label: string;
+  value: number;
+  icon: string;
+  prefix?: string;
+  suffix?: string;
+}
+
+function StatItem({ label, value, icon, prefix, suffix }: StatItemProps) {
   return (
     <View style={styles.statItem}>
       <Text style={styles.statIcon}>{icon}</Text>
-      <Text style={styles.statValue}>{value}</Text>
+      <AnimatedNumber
+        value={value}
+        style={styles.statValue}
+        prefix={prefix}
+        suffix={suffix}
+        duration={800}
+      />
       <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
@@ -72,6 +129,41 @@ const styles = {
     fontWeight: "700" as const,
     color: T.text,
   },
+  // XP Progress Bar
+  xpBarSection: {
+    gap: 6,
+  },
+  xpBarHeader: {
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "baseline" as const,
+  },
+  xpTotal: {
+    fontSize: 20,
+    fontWeight: "800" as const,
+    color: T.xp,
+  },
+  xpLevelLabel: {
+    fontSize: 12,
+    color: T.textSec,
+    fontWeight: "600" as const,
+  },
+  xpBarTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: T.surface2,
+    overflow: "hidden" as const,
+  },
+  xpBarFill: {
+    height: "100%" as any,
+    borderRadius: 4,
+    backgroundColor: T.xp,
+  },
+  xpBarSubtext: {
+    fontSize: 11,
+    color: T.textMuted,
+  },
+  // Grid
   gridContainer: {
     flexDirection: "row" as const,
     flexWrap: "wrap" as const,
