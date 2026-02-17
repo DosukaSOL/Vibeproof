@@ -22,6 +22,7 @@ export interface LocalUser {
   missionsCompleted: number;
   lastActiveDate: string;
   createdAt: string;
+  avatarUri?: string;
 }
 
 export interface LocalCompletion {
@@ -96,6 +97,17 @@ export async function updateLocalUsername(
   const user = await getLocalUser(wallet);
   if (!user) throw new Error("User not found");
   user.username = username;
+  await saveLocalUser(user);
+  return user;
+}
+
+export async function updateAvatarUri(
+  wallet: string,
+  avatarUri: string
+): Promise<LocalUser> {
+  const user = await getLocalUser(wallet);
+  if (!user) throw new Error("User not found");
+  user.avatarUri = avatarUri;
   await saveLocalUser(user);
   return user;
 }

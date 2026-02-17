@@ -7,6 +7,7 @@ import {
     createLocalUser,
     getLocalUser,
     LocalUser,
+    updateAvatarUri,
     updateLocalUsername,
 } from "@/lib/localStore";
 import { useCallback, useEffect, useState } from "react";
@@ -112,11 +113,32 @@ export function useUser(walletAddress: string | null) {
     }
   }, [walletAddress]);
 
+  /**
+   * Update user's avatar
+   */
+  const setAvatar = useCallback(
+    async (uri: string) => {
+      if (!walletAddress) {
+        throw new Error("Wallet not connected");
+      }
+      try {
+        const updated = await updateAvatarUri(walletAddress, uri);
+        setState((prev) => ({ ...prev, user: updated }));
+        return updated;
+      } catch (error: any) {
+        console.warn("[useUser] setAvatar error:", error?.message);
+        throw error;
+      }
+    },
+    [walletAddress]
+  );
+
   return {
     user: state.user,
     isLoading: state.isLoading,
     error: state.error,
     setUsername,
+    setAvatar,
     refresh,
   };
 }

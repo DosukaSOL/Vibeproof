@@ -2,7 +2,6 @@
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { WalletProvider } from "@/context/WalletContext";
 import { Stack } from "expo-router";
-import React from "react";
 
 export default function RootLayout() {
   return (
@@ -14,6 +13,10 @@ export default function RootLayout() {
           <Stack.Screen
             name="modal"
             options={{ presentation: "modal", headerShown: false }}
+          />
+          <Stack.Screen
+            name="user-profile"
+            options={{ headerShown: false, animation: "slide_from_right" }}
           />
           <Stack.Screen name="+not-found" />
         </Stack>
