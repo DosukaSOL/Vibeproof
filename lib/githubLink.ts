@@ -149,14 +149,13 @@ export async function exchangeGitHubCode(
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error("[GitHub Link] Token exchange failed:", errorText);
+    console.error("[GitHub Link] Token exchange failed: HTTP", response.status);
     throw new Error("Failed to exchange GitHub authorization code");
   }
 
   const json = await response.json();
   if (json.error) {
-    console.error("[GitHub Link] Token exchange error:", json.error_description);
+    console.error("[GitHub Link] Token exchange error:", json.error || "unknown");
     throw new Error(json.error_description || "GitHub token exchange failed");
   }
 

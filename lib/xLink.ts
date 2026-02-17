@@ -171,8 +171,7 @@ export async function exchangeXCode(
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error("[X Link] Token exchange failed:", errorText);
+    console.error("[X Link] Token exchange failed: HTTP", response.status);
     throw new Error("Failed to exchange X authorization code");
   }
 
