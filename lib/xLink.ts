@@ -92,15 +92,18 @@ export async function saveXLinkToDb(
  * Remove X link from Supabase
  */
 export async function removeXLinkFromDb(wallet: string): Promise<void> {
-  const { error } = await getSupabase()
-    .from("user_social_links")
-    .delete()
-    .eq("user_wallet", wallet)
-    .eq("provider", "x");
+  try {
+    const { error } = await getSupabase()
+      .from("user_social_links")
+      .delete()
+      .eq("user_wallet", wallet)
+      .eq("provider", "x");
 
-  if (error) {
-    console.error("[X Link] DB delete error:", error);
-    throw new Error("Failed to remove X link from database");
+    if (error) {
+      console.warn("[X Link] DB delete error (non-fatal):", error);
+    }
+  } catch (err) {
+    console.warn("[X Link] DB delete failed (non-fatal):", err);
   }
 }
 
@@ -110,27 +113,32 @@ export async function removeXLinkFromDb(wallet: string): Promise<void> {
 export async function getXLinkFromDb(
   wallet: string
 ): Promise<XLinkStatus> {
-  const { data, error } = await getSupabase()
-    .from("user_social_links")
-    .select("provider_user_id, provider_username, linked_at")
-    .eq("user_wallet", wallet)
-    .eq("provider", "x")
-    .single();
+  try {
+    const { data, error } = await getSupabase()
+      .from("user_social_links")
+      .select("provider_user_id, provider_username, linked_at")
+      .eq("user_wallet", wallet)
+      .eq("provider", "x")
+      .single();
 
-  if (error && error.code !== "PGRST116") {
-    console.error("[X Link] DB read error:", error);
-  }
+    if (error && error.code !== "PGRST116") {
+      console.warn("[X Link] DB read error (non-fatal):", error);
+    }
 
-  if (!data) {
+    if (!data) {
+      return { isLinked: false, username: null, userId: null, linkedAt: null };
+    }
+
+    return {
+      isLinked: true,
+      username: data.provider_username,
+      userId: data.provider_user_id,
+      linkedAt: data.linked_at,
+    };
+  } catch (err) {
+    console.warn("[X Link] DB read failed (non-fatal):", err);
     return { isLinked: false, username: null, userId: null, linkedAt: null };
   }
-
-  return {
-    isLinked: true,
-    username: data.provider_username,
-    userId: data.provider_user_id,
-    linkedAt: data.linked_at,
-  };
 }
 
 /**
@@ -220,8 +228,12 @@ export async function completeXLink(
     last_refresh: now,
   });
 
-  // 4. Save to Supabase
-  await saveXLinkToDb(wallet, profile.id, profile.username);
+  // 4. Save to Supabase (non-fatal — link works locally even if DB fails)
+  try {
+    await saveXLinkToDb(wallet, profile.id, profile.username);
+  } catch (dbErr) {
+    console.warn("[X Link] DB save failed (non-fatal):", dbErr);
+  }
 
   return {
     isLinked: true,

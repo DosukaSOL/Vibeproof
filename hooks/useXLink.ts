@@ -86,9 +86,9 @@ export function useXLink(walletAddress: string | null): UseXLinkReturn {
       setError(null);
 
       const WebBrowser = require("expo-web-browser");
-      const Linking = require("expo-linking");
 
-      const redirectUri = Linking.createURL("x-callback");
+      // Always use the app scheme — Linking.createURL may produce exp:// in dev
+      const redirectUri = `${CONFIG.APP_SCHEME}://x-callback`;
       const codeVerifier = generateCodeVerifier();
       const codeChallenge = await generateCodeChallenge(codeVerifier);
 
