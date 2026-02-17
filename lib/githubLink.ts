@@ -121,21 +121,22 @@ export async function getGitHubLinkFromDb(
 }
 
 /**
- * Exchange authorization code for GitHub access token.
- * Note: GitHub OAuth for public clients requires the client_id only.
- * The token exchange SHOULD use a backend for security, but for mobile-only
- * apps without a backend, GitHub's web flow is the simplest approach.
+ * Request a Device Code from GitHub for the Device Flow.
+ * The user enters the returned `user_code` at `verification_uri`.
  */
-export async function exchangeGitHubCode(
-  code: string,
-  redirectUri: string
-): Promise<{ access_token: string }> {
-  const clientId = CONFIG.GITHUB_CLIENT_ID;
-  if (!clientId) {
-    throw new Error("GITHUB_CLIENT_ID not configured");
-  }
+export interface DeviceCodeResponse {
+  device_code: string;
+  user_code: string;
+  verification_uri: string;
+  expires_in: number;
+  interval: number;
+}
 
-  const response = await fetch("https://github.com/login/oauth/access_token", {
+export async function requestDeviceCode(): Promise<DeviceCodeResponse> {
+  const clientId = CONFIG.GITHUB_CLIENT_ID;
+  if (!clientId) throw new Error("GITHUB_CLIENT_ID not configured");
+
+  const response = await fetch("https://github.com/login/device/code", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -143,23 +144,84 @@ export async function exchangeGitHubCode(
     },
     body: JSON.stringify({
       client_id: clientId,
-      code,
-      redirect_uri: redirectUri,
+      scope: "read:user",
     }),
   });
 
   if (!response.ok) {
-    console.error("[GitHub Link] Token exchange failed: HTTP", response.status);
-    throw new Error("Failed to exchange GitHub authorization code");
+    console.error("[GitHub Link] Device code request failed: HTTP", response.status);
+    throw new Error(
+      "Failed to start GitHub authorization. Make sure Device Flow is enabled in your GitHub OAuth App settings."
+    );
   }
 
   const json = await response.json();
   if (json.error) {
-    console.error("[GitHub Link] Token exchange error:", json.error || "unknown");
-    throw new Error(json.error_description || "GitHub token exchange failed");
+    console.error("[GitHub Link] Device code error:", json.error);
+    throw new Error(json.error_description || json.error);
   }
 
-  return { access_token: json.access_token };
+  return json as DeviceCodeResponse;
+}
+
+/**
+ * Poll GitHub for an access token after the user has entered their device code.
+ * Respects the polling interval and handles slow_down / expired_token errors.
+ */
+export async function pollForDeviceToken(
+  deviceCode: string,
+  interval: number,
+  expiresIn: number
+): Promise<{ access_token: string }> {
+  const clientId = CONFIG.GITHUB_CLIENT_ID;
+  const deadline = Date.now() + expiresIn * 1000;
+  let pollInterval = interval;
+
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, pollInterval * 1000));
+
+    const response = await fetch(
+      "https://github.com/login/oauth/access_token",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          client_id: clientId,
+          device_code: deviceCode,
+          grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+        }),
+      }
+    );
+
+    const json = await response.json();
+
+    if (json.access_token) {
+      return { access_token: json.access_token };
+    }
+
+    if (json.error === "authorization_pending") {
+      continue;
+    }
+    if (json.error === "slow_down") {
+      pollInterval += 5;
+      continue;
+    }
+    if (json.error === "expired_token") {
+      throw new Error("Authorization timed out. Please try again.");
+    }
+    if (json.error === "access_denied") {
+      throw new Error("Authorization was denied.");
+    }
+
+    throw new Error(
+      json.error_description || json.error || "Token exchange failed"
+    );
+  }
+
+  throw new Error("Authorization timed out.");
 }
 
 /**
@@ -183,29 +245,25 @@ export async function fetchGitHubProfile(
 }
 
 /**
- * Full GitHub link flow: exchange code -> fetch profile -> save locally + to DB
+ * Full GitHub link flow: use access token -> fetch profile -> save locally + to DB
  */
 export async function completeGitHubLink(
   wallet: string,
-  code: string,
-  redirectUri: string
+  accessToken: string
 ): Promise<GitHubLinkStatus> {
-  // 1. Exchange code for token
-  const tokens = await exchangeGitHubCode(code, redirectUri);
+  // 1. Fetch profile
+  const profile = await fetchGitHubProfile(accessToken);
 
-  // 2. Fetch profile
-  const profile = await fetchGitHubProfile(tokens.access_token);
-
-  // 3. Save locally
+  // 2. Save locally
   const now = new Date().toISOString();
   await saveGitHubLink({
     github_user_id: profile.id.toString(),
     github_username: profile.login,
-    access_token: tokens.access_token,
+    access_token: accessToken,
     linked_at: now,
   });
 
-  // 4. Save to local social links store
+  // 3. Save to local social links store
   const { saveSocialLink } = require("./localStore");
   await saveSocialLink(wallet, {
     provider: "github" as const,
@@ -214,7 +272,7 @@ export async function completeGitHubLink(
     linkedAt: now,
   });
 
-  // 5. Save to Supabase (non-fatal)
+  // 4. Save to Supabase (non-fatal)
   try {
     await saveGitHubLinkToDb(wallet, profile.id.toString(), profile.login);
   } catch (dbErr) {

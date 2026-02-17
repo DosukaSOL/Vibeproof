@@ -47,7 +47,8 @@ export function EngineMissionCard({
     mission.verification_type.startsWith("on_chain_") ||
     mission.verification_type.startsWith("x_") ||
     mission.verification_type.startsWith("github_") ||
-    mission.verification_type === "app_action";
+    mission.verification_type === "app_action" ||
+    mission.verification_type === "social_link";
 
   const getMissionIcon = () => {
     const type = mission.verification_type;

@@ -1,7 +1,7 @@
 /**
  * useGitHubLink Hook
  * Manages GitHub account linking state.
- * OAuth flow uses expo-web-browser directly.
+ * Uses GitHub Device Flow (no client_secret needed).
  */
 import { CONFIG } from "@/lib/config";
 import {
@@ -9,6 +9,8 @@ import {
     getGitHubLinkFromDb,
     GitHubLinkStatus,
     loadGitHubLink,
+    pollForDeviceToken,
+    requestDeviceCode,
     unlinkGitHub,
 } from "@/lib/githubLink";
 import { useCallback, useEffect, useState } from "react";
@@ -78,33 +80,52 @@ export function useGitHubLink(walletAddress: string | null): UseGitHubLinkReturn
       setIsLinking(true);
       setError(null);
 
-      const WebBrowser = require("expo-web-browser");
+      // 1. Request a device code from GitHub
+      const deviceCode = await requestDeviceCode();
 
-      const redirectUri = `${CONFIG.APP_SCHEME}://github-callback`;
-      const state = Math.random().toString(36).slice(2);
+      // 2. Copy the code to clipboard
+      try {
+        const Clipboard = require("expo-clipboard");
+        await Clipboard.setStringAsync(deviceCode.user_code);
+      } catch {
+        // Clipboard not critical — user can read the code from the alert
+      }
 
-      const params = new URLSearchParams({
-        client_id: CONFIG.GITHUB_CLIENT_ID,
-        redirect_uri: redirectUri,
-        scope: "read:user",
-        state,
+      // 3. Show the code and wait for user to press "Open GitHub"
+      const { Alert, Linking } = require("react-native");
+      const userConfirmed = await new Promise<boolean>((resolve) => {
+        Alert.alert(
+          "Enter Code on GitHub",
+          `Your code:\n\n${deviceCode.user_code}\n\nCopied to clipboard! Tap "Open GitHub" to authorize.`,
+          [
+            { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
+            { text: "Open GitHub", onPress: () => resolve(true) },
+          ],
+          { cancelable: false }
+        );
       });
 
-      const authUrl = `https://github.com/login/oauth/authorize?${params.toString()}`;
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
-
-      if (result.type === "success" && result.url) {
-        const url = new URL(result.url);
-        const code = url.searchParams.get("code");
-        if (code) {
-          const linkResult = await completeGitHubLink(
-            walletAddress,
-            code,
-            redirectUri
-          );
-          setStatus(linkResult);
-        }
+      if (!userConfirmed) {
+        setIsLinking(false);
+        return;
       }
+
+      // 4. Open GitHub device verification page
+      await Linking.openURL(deviceCode.verification_uri);
+
+      // 5. Poll for the access token (user is in browser authorizing)
+      const tokens = await pollForDeviceToken(
+        deviceCode.device_code,
+        deviceCode.interval,
+        deviceCode.expires_in
+      );
+
+      // 6. Complete the link (fetch profile, save locally + DB)
+      const linkResult = await completeGitHubLink(
+        walletAddress,
+        tokens.access_token
+      );
+      setStatus(linkResult);
     } catch (err: any) {
       setError(err.message || "Failed to link GitHub account");
       console.error("[useGitHubLink] Link error:", err);
