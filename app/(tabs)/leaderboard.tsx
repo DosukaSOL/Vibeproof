@@ -90,7 +90,7 @@ export default function LeaderboardScreen() {
             </View>
 
             <UserAvatar
-              uri={(user as any).avatarUri || undefined}
+              uri={user.avatarUri}
               name={user.username || user.wallet}
               size={36}
             />
