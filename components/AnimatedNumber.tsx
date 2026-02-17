@@ -65,13 +65,13 @@ export function AnimatedNumber({
           toValue: 1.2,
           duration: 150,
           easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
+          useNativeDriver: false, // must match JS-driven text node
         }),
         Animated.spring(scaleAnim, {
           toValue: 1,
           damping: 8,
           stiffness: 200,
-          useNativeDriver: true,
+          useNativeDriver: false, // must match JS-driven text node
         }),
       ]).start();
     }

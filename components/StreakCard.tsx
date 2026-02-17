@@ -97,20 +97,20 @@ function FireIcon({ isActive, streak }: { isActive: boolean; streak: number }) {
   useEffect(() => {
     if (!isActive) return;
 
-    // Continuous pulse
+    // Continuous pulse (JS driver — shares node with JS-driven glow color)
     const pulse = Animated.loop(
       Animated.sequence([
         Animated.timing(scale, {
           toValue: 1.15,
           duration: 800,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(scale, {
           toValue: 1,
           duration: 800,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ])
     );
