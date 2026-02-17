@@ -18,6 +18,14 @@ export default function RootLayout() {
             name="user-profile"
             options={{ headerShown: false, animation: "slide_from_right" }}
           />
+          <Stack.Screen
+            name="x-callback"
+            options={{ headerShown: false, animation: "fade" }}
+          />
+          <Stack.Screen
+            name="github-callback"
+            options={{ headerShown: false, animation: "fade" }}
+          />
           <Stack.Screen name="+not-found" />
         </Stack>
       </WalletProvider>

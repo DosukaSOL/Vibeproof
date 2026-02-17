@@ -6,6 +6,7 @@ export const CONFIG = {
   SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL || "",
   SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "",
   X_CLIENT_ID: process.env.EXPO_PUBLIC_X_CLIENT_ID || "",
+  GITHUB_CLIENT_ID: process.env.EXPO_PUBLIC_GITHUB_CLIENT_ID || "",
   SOLANA_CLUSTER: "mainnet-beta" as const,
   APP_SCHEME: "vibeproof",
   APP_NAME: "VibeProof",

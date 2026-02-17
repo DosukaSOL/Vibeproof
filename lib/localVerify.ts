@@ -64,6 +64,12 @@ export async function verifyMission(
       case "social_link":
         return await verifySocialLink(wallet, config);
 
+      case "github_star":
+        return await verifyGitHubStar(wallet, config);
+
+      case "github_follow":
+        return await verifyGitHubFollow(wallet, config);
+
       case "manual":
         // Manual missions are always "verified" — proof is user-submitted
         return {
@@ -133,4 +139,110 @@ async function verifySocialLink(
       ? `${provider} account linked!`
       : `Link your ${provider} account first`,
   };
+}
+
+// ─── GitHub Verification ────────────────────────────────
+
+async function getGitHubToken(): Promise<string | null> {
+  try {
+    const { loadGitHubLink } = require("./githubLink");
+    const link = await loadGitHubLink();
+    return link?.access_token || null;
+  } catch {
+    return null;
+  }
+}
+
+async function verifyGitHubStar(
+  wallet: string,
+  config: Record<string, any>
+): Promise<VerifyResult> {
+  const token = await getGitHubToken();
+  if (!token) {
+    return { verified: false, message: "Link your GitHub account first" };
+  }
+
+  const repo = config.repo;
+  if (!repo) {
+    return { verified: false, message: "Missing repo configuration" };
+  }
+
+  try {
+    // Check if user has starred the repo
+    const response = await fetch(
+      `https://api.github.com/user/starred/${repo}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+        },
+      }
+    );
+
+    // 204 = starred, 404 = not starred
+    if (response.status === 204) {
+      return {
+        verified: true,
+        message: `Starred ${repo}!`,
+        proof: { repo, starred: true },
+      };
+    }
+
+    return {
+      verified: false,
+      message: `Star the ${repo} repository on GitHub, then verify again`,
+    };
+  } catch (err: any) {
+    return {
+      verified: false,
+      message: err?.message || "Failed to check GitHub star",
+    };
+  }
+}
+
+async function verifyGitHubFollow(
+  wallet: string,
+  config: Record<string, any>
+): Promise<VerifyResult> {
+  const token = await getGitHubToken();
+  if (!token) {
+    return { verified: false, message: "Link your GitHub account first" };
+  }
+
+  const target = config.target;
+  if (!target) {
+    return { verified: false, message: "Missing target configuration" };
+  }
+
+  try {
+    // Check if user follows the target user/org
+    const response = await fetch(
+      `https://api.github.com/user/following/${target}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+        },
+      }
+    );
+
+    // 204 = following, 404 = not following
+    if (response.status === 204) {
+      return {
+        verified: true,
+        message: `Following ${target}!`,
+        proof: { target, following: true },
+      };
+    }
+
+    return {
+      verified: false,
+      message: `Follow ${target} on GitHub, then verify again`,
+    };
+  } catch (err: any) {
+    return {
+      verified: false,
+      message: err?.message || "Failed to check GitHub follow",
+    };
+  }
 }

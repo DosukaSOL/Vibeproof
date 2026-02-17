@@ -4,7 +4,7 @@
  * No Supabase dependency — works fully offline.
  */
 
-export type MissionTag = "on-chain" | "social" | "app" | "defi";
+export type MissionTag = "on-chain" | "social" | "app" | "defi" | "github";
 
 export interface MissionTemplate {
   id: string;
@@ -48,6 +48,12 @@ export const MISSION_TAG_META: Record<
     bg: "rgba(240, 136, 62, 0.12)",
     icon: "💰",
   },
+  github: {
+    label: "GitHub",
+    color: "#E1E4E8",
+    bg: "rgba(225, 228, 232, 0.12)",
+    icon: "🐙",
+  },
 };
 
 // ─── Daily Mission Pool (rotate each day) ───────────────
@@ -76,22 +82,6 @@ const DAILY_POOL: MissionTemplate[] = [
     xp_reward: 50,
     icon: "💰",
     tag: "defi",
-  },
-  {
-    id: "daily_tweet",
-    title: "Tweet about VibeProof",
-    description:
-      "Post a tweet with #VibeProof and the last 4 digits of your wallet address",
-    category: "daily",
-    verification_type: "x_post_hashtag",
-    verification_config: {
-      hashtag: "#VibeProof",
-      require_wallet_suffix: true,
-    },
-    xp_reward: 150,
-    icon: "𝕏",
-    requires_social: "x",
-    tag: "social",
   },
   {
     id: "daily_checkin",
@@ -168,33 +158,6 @@ const ONE_TIME_MISSIONS: MissionTemplate[] = [
   },
 
   {
-    id: "ot_follow_vibeproof",
-    title: "Follow @VibeProofSOL on X",
-    description: "Follow the official VibeProof account on X",
-    category: "one_time",
-    verification_type: "x_follow",
-    verification_config: { target_username: "VibeProofSOL" },
-    xp_reward: 100,
-    icon: "👥",
-    requires_social: "x",
-    tag: "social",
-  },
-  {
-    id: "ot_first_tweet",
-    title: "First VibeProof Tweet",
-    description: "Post your first tweet mentioning #VibeProof",
-    category: "one_time",
-    verification_type: "x_post_hashtag",
-    verification_config: {
-      hashtag: "#VibeProof",
-      require_wallet_suffix: false,
-    },
-    xp_reward: 200,
-    icon: "📝",
-    requires_social: "x",
-    tag: "social",
-  },
-  {
     id: "ot_diamond_hands",
     title: "Diamond Hands 💎",
     description: "Hold at least 0.1 SOL in your connected wallet",
@@ -204,6 +167,43 @@ const ONE_TIME_MISSIONS: MissionTemplate[] = [
     xp_reward: 250,
     icon: "💎",
     tag: "defi",
+  },
+
+  // ─── GitHub Missions ──────────────────────────────────
+  {
+    id: "ot_link_github",
+    title: "Link GitHub Account",
+    description: "Connect your GitHub account to unlock developer missions",
+    category: "one_time",
+    verification_type: "social_link",
+    verification_config: { provider: "github" },
+    xp_reward: 200,
+    icon: "🐙",
+    tag: "github",
+  },
+  {
+    id: "ot_star_repo",
+    title: "Star VibeProof on GitHub",
+    description: "Star the VibeProof repository on GitHub to show your support",
+    category: "one_time",
+    verification_type: "github_star",
+    verification_config: { repo: "DosukaSOL/Vibeproof" },
+    xp_reward: 150,
+    icon: "⭐",
+    requires_social: "github",
+    tag: "github",
+  },
+  {
+    id: "ot_github_follow",
+    title: "Follow VibeProof on GitHub",
+    description: "Follow the DosukaSOL organization on GitHub",
+    category: "one_time",
+    verification_type: "github_follow",
+    verification_config: { target: "DosukaSOL" },
+    xp_reward: 100,
+    icon: "👤",
+    requires_social: "github",
+    tag: "github",
   },
 ];
 

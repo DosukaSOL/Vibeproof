@@ -9,7 +9,17 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { formatWalletAddress } from "@/lib/solana";
 import { T } from "@/lib/theme";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ScrollView, Share, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Linking, ScrollView, Share, Text, View } from "react-native";
+
+interface SocialLinkRow {
+  provider: string;
+  provider_username: string;
+}
+
+function getSupabase() {
+  return require("@/lib/supabase").supabase;
+}
 
 export default function UserProfileScreen() {
   const router = useRouter();
@@ -31,6 +41,27 @@ export default function UserProfileScreen() {
   const rank = parseInt(params.rank || "0", 10);
   const avatarUri = params.avatarUri || "";
   const missionsCompleted = Math.floor(xp / 25); // estimate
+
+  const [socialLinks, setSocialLinks] = useState<SocialLinkRow[]>([]);
+
+  // Fetch social links for this user from Supabase
+  useEffect(() => {
+    if (!wallet) return;
+    (async () => {
+      try {
+        const { data, error } = await getSupabase()
+          .from("user_social_links")
+          .select("provider, provider_username")
+          .eq("user_wallet", wallet);
+        if (!error && data) setSocialLinks(data);
+      } catch {
+        // non-fatal
+      }
+    })();
+  }, [wallet]);
+
+  const xUsername = socialLinks.find((l) => l.provider === "x")?.provider_username;
+  const githubUsername = socialLinks.find((l) => l.provider === "github")?.provider_username;
 
   const handleShare = async () => {
     try {
@@ -100,8 +131,37 @@ export default function UserProfileScreen() {
         </View>
       </FadeInView>
 
+      {/* Social Links */}
+      {(xUsername || githubUsername) && (
+        <FadeInView index={4}>
+          <View style={s.card}>
+            <Text style={s.cardTitle}>Linked Accounts</Text>
+            {xUsername && (
+              <AnimatedPressable
+                onPress={() => Linking.openURL(`https://x.com/${xUsername}`)}
+                style={s.socialRow}
+              >
+                <Text style={s.socialIcon}>𝕏</Text>
+                <Text style={s.socialUsername}>@{xUsername}</Text>
+                <Text style={s.socialArrow}>↗</Text>
+              </AnimatedPressable>
+            )}
+            {githubUsername && (
+              <AnimatedPressable
+                onPress={() => Linking.openURL(`https://github.com/${githubUsername}`)}
+                style={s.socialRow}
+              >
+                <Text style={s.socialIcon}>🐙</Text>
+                <Text style={s.socialUsername}>{githubUsername}</Text>
+                <Text style={s.socialArrow}>↗</Text>
+              </AnimatedPressable>
+            )}
+          </View>
+        </FadeInView>
+      )}
+
       {/* Share button */}
-      <FadeInView index={4}>
+      <FadeInView index={5}>
         <AnimatedPressable onPress={handleShare} style={s.shareBtn}>
           <Text style={s.shareBtnText}>📤 Share Profile</Text>
         </AnimatedPressable>
@@ -241,5 +301,26 @@ const s = {
     color: "#fff",
     fontWeight: "700" as const,
     fontSize: 15,
+  },
+  socialRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: T.surface2,
+    borderRadius: T.rS,
+    padding: 12,
+    gap: 10,
+  },
+  socialIcon: {
+    fontSize: 20,
+  },
+  socialUsername: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "600" as const,
+    color: T.xp,
+  },
+  socialArrow: {
+    fontSize: 16,
+    color: T.textMuted,
   },
 };
