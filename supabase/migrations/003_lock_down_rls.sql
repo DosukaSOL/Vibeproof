@@ -85,113 +85,87 @@ CREATE POLICY "social_links_delete_service_only"
 
 -- ─── COMPLETIONS TABLE (legacy from 000) ─────────────
 
-DROP POLICY IF EXISTS "completions_insert_policy" ON public.completions;
-DROP POLICY IF EXISTS "completions_update_policy" ON public.completions;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'completions') THEN
+    DROP POLICY IF EXISTS "completions_insert_policy" ON public.completions;
+    DROP POLICY IF EXISTS "completions_update_policy" ON public.completions;
 
--- Keep: SELECT is public ✅
-
-CREATE POLICY "completions_insert_service_only"
-  ON public.completions FOR INSERT
-  WITH CHECK (
-    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
-  );
-
-CREATE POLICY "completions_update_service_only"
-  ON public.completions FOR UPDATE
-  USING (
-    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
-  )
-  WITH CHECK (
-    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
-  );
+    CREATE POLICY "completions_insert_service_only"
+      ON public.completions FOR INSERT
+      WITH CHECK ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role');
+    CREATE POLICY "completions_update_service_only"
+      ON public.completions FOR UPDATE
+      USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role')
+      WITH CHECK ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role');
+  END IF;
+END $$;
 
 
 -- ─── MISSIONS TABLE (legacy from 000) ────────────────
 
-DROP POLICY IF EXISTS "missions_admin_policy" ON public.missions;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'missions') THEN
+    DROP POLICY IF EXISTS "missions_admin_policy" ON public.missions;
 
--- Keep: SELECT for active missions only ✅
-
-CREATE POLICY "missions_insert_service_only"
-  ON public.missions FOR INSERT
-  WITH CHECK (
-    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
-  );
-
-CREATE POLICY "missions_update_service_only"
-  ON public.missions FOR UPDATE
-  USING (
-    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
-  )
-  WITH CHECK (
-    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
-  );
+    CREATE POLICY "missions_insert_service_only"
+      ON public.missions FOR INSERT
+      WITH CHECK ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role');
+    CREATE POLICY "missions_update_service_only"
+      ON public.missions FOR UPDATE
+      USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role')
+      WITH CHECK ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role');
+  END IF;
+END $$;
 
 
 -- ─── MISSION TEMPLATES TABLE ─────────────────────────
 
--- Keep: SELECT is public ✅
--- No write policy for anon should exist; add service_role only
-
-CREATE POLICY "templates_insert_service_only"
-  ON mission_templates FOR INSERT
-  WITH CHECK (
-    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
-  );
-
-CREATE POLICY "templates_update_service_only"
-  ON mission_templates FOR UPDATE
-  USING (
-    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
-  )
-  WITH CHECK (
-    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
-  );
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'mission_templates') THEN
+    CREATE POLICY "templates_insert_service_only"
+      ON public.mission_templates FOR INSERT
+      WITH CHECK ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role');
+    CREATE POLICY "templates_update_service_only"
+      ON public.mission_templates FOR UPDATE
+      USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role')
+      WITH CHECK ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role');
+  END IF;
+END $$;
 
 
 -- ─── MISSION INSTANCES TABLE ─────────────────────────
 
-DROP POLICY IF EXISTS "Allow mission instance generation" ON mission_instances;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'mission_instances') THEN
+    DROP POLICY IF EXISTS "Allow mission instance generation" ON public.mission_instances;
 
--- Keep: SELECT is public ✅
-
-CREATE POLICY "instances_insert_service_only"
-  ON mission_instances FOR INSERT
-  WITH CHECK (
-    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
-  );
-
-CREATE POLICY "instances_update_service_only"
-  ON mission_instances FOR UPDATE
-  USING (
-    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
-  )
-  WITH CHECK (
-    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
-  );
+    CREATE POLICY "instances_insert_service_only"
+      ON public.mission_instances FOR INSERT
+      WITH CHECK ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role');
+    CREATE POLICY "instances_update_service_only"
+      ON public.mission_instances FOR UPDATE
+      USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role')
+      WITH CHECK ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role');
+  END IF;
+END $$;
 
 
 -- ─── MISSION COMPLETIONS TABLE ───────────────────────
 
-DROP POLICY IF EXISTS "Users can submit completions" ON mission_completions;
-DROP POLICY IF EXISTS "Users can update own completions" ON mission_completions;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'mission_completions') THEN
+    DROP POLICY IF EXISTS "Users can submit completions" ON public.mission_completions;
+    DROP POLICY IF EXISTS "Users can update own completions" ON public.mission_completions;
 
--- Keep: SELECT is public ✅
-
-CREATE POLICY "mission_completions_insert_service_only"
-  ON mission_completions FOR INSERT
-  WITH CHECK (
-    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
-  );
-
-CREATE POLICY "mission_completions_update_service_only"
-  ON mission_completions FOR UPDATE
-  USING (
-    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
-  )
-  WITH CHECK (
-    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
-  );
+    CREATE POLICY "mission_completions_insert_service_only"
+      ON public.mission_completions FOR INSERT
+      WITH CHECK ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role');
+    CREATE POLICY "mission_completions_update_service_only"
+      ON public.mission_completions FOR UPDATE
+      USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role')
+      WITH CHECK ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role');
+  END IF;
+END $$;
 
 
 -- ─── QUEST COMPLETIONS TABLE (live DB) ───────────────
@@ -294,9 +268,23 @@ END $$;
 
 -- ─── FIX SEARCH PATH for our migration functions too ──
 
-ALTER FUNCTION public.get_user_rank(text) SET search_path = public;
-ALTER FUNCTION public.add_user_xp(text, integer) SET search_path = public;
-ALTER FUNCTION public.generate_daily_missions() SET search_path = public;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'get_user_rank') THEN
+    ALTER FUNCTION public.get_user_rank(text) SET search_path = public;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'add_user_xp') THEN
+    ALTER FUNCTION public.add_user_xp(text, integer) SET search_path = public;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'generate_daily_missions') THEN
+    ALTER FUNCTION public.generate_daily_missions() SET search_path = public;
+  END IF;
+END $$;
 
 
 -- ─── STORAGE: avatars bucket ─────────────────────────
