@@ -280,25 +280,6 @@ VibeProof verifies missions locally and on-chain:
 
 ---
 
-## Building Locally
-
-```bash
-# Prerequisites: Node.js, Java 17, Android SDK
-
-# Install dependencies
-npm install
-
-# Run development server
-npm start
-
-# Build Android APK locally
-export JAVA_HOME=$(/usr/libexec/java_home -v 17)
-export ANDROID_HOME=$HOME/Library/Android/sdk
-npx eas build --platform android --profile preview --local
-```
-
----
-
 ## Contact
 
 **X:** [@DosukaSOL](https://twitter.com/DosukaSOL)
