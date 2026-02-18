@@ -72,7 +72,7 @@ export function useGitHubLink(walletAddress: string | null): UseGitHubLinkReturn
     }
 
     if (!CONFIG.GITHUB_CLIENT_ID) {
-      setError("GitHub linking coming soon — requires app configuration.");
+      setError("GitHub linking is not available — missing client configuration. Rebuild the app with EXPO_PUBLIC_GITHUB_CLIENT_ID set.");
       return;
     }
 

@@ -12,6 +12,9 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_GITHUB_CLIENT_ID": "Ov23lirrwCwulqGED8xx"
       }
     },
     "production": {}

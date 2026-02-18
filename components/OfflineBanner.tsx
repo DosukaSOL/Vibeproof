@@ -15,31 +15,32 @@ export function OfflineBanner() {
 
     const check = async () => {
       try {
-        const { supabase } = require("@/lib/supabase");
-        const { error } = await supabase
-          .from("users")
-          .select("wallet")
-          .limit(1);
-        if (mounted) setIsOffline(!!error);
+        // Simple connectivity check — hit a fast, reliable endpoint
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch("https://www.google.com/generate_204", {
+          method: "HEAD",
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        if (mounted) setIsOffline(!res.ok);
       } catch {
         if (mounted) setIsOffline(true);
       }
     };
 
     // Initial check after a short delay
-    const timer = setTimeout(check, 2000);
+    const timer = setTimeout(check, 3000);
 
-    // Re-check every 30 seconds if offline
-    intervalId = setInterval(() => {
-      if (isOffline) check();
-    }, 30000);
+    // Re-check every 30 seconds
+    intervalId = setInterval(check, 30000);
 
     return () => {
       mounted = false;
       clearTimeout(timer);
       clearInterval(intervalId);
     };
-  }, [isOffline]);
+  }, []);
 
   if (!isOffline) return null;
 

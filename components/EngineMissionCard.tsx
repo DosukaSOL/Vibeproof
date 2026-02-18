@@ -85,11 +85,15 @@ export function EngineMissionCard({
         ]).start();
       } else {
         await hapticError();
-        Alert.alert("Verification Failed", result?.verification_result?.message || "Could not verify. Try again later.");
+        const msg =
+          result?.verification_result?.message ||
+          "You haven't met the requirements yet. Keep going!";
+        Alert.alert("Not Yet Complete", msg);
       }
     } catch (error: any) {
       await hapticError();
-      Alert.alert("Error", error?.message || "Verification failed");
+      const msg = error?.message || "Something went wrong. Try again later.";
+      Alert.alert("Not Yet Complete", msg);
     }
   };
 
