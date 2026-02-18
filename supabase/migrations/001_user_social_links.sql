@@ -35,17 +35,21 @@ CREATE POLICY "Social links are viewable by everyone"
   ON user_social_links FOR SELECT 
   USING (true);
 
--- Users can insert their own links
-CREATE POLICY "Users can create own social links" 
+-- Only service_role can write social links
+CREATE POLICY "social_links_insert_service_only" 
   ON user_social_links FOR INSERT 
-  WITH CHECK (true);
+  WITH CHECK (
+    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
+  );
 
--- Users can update their own links
-CREATE POLICY "Users can update own social links" 
+CREATE POLICY "social_links_update_service_only" 
   ON user_social_links FOR UPDATE 
-  USING (true);
+  USING (
+    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
+  );
 
--- Users can delete their own links
-CREATE POLICY "Users can delete own social links" 
+CREATE POLICY "social_links_delete_service_only" 
   ON user_social_links FOR DELETE 
-  USING (true);
+  USING (
+    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
+  );

@@ -185,17 +185,10 @@ export function useUser(walletAddress: string | null) {
               const updated2 = await updateAvatarUri(walletAddress, publicUrl);
               setState((prev) => ({ ...prev, user: updated2 }));
 
-              // Sync public URL to Supabase users table
+              // Sync public URL via Edge Function
               try {
-                const { supabase } = require("@/lib/supabase");
-                await supabase.from("users").upsert(
-                  {
-                    wallet: walletAddress,
-                    avatar_url: publicUrl,
-                    updated_at: new Date().toISOString(),
-                  },
-                  { onConflict: "wallet" }
-                );
+                const { syncAvatarUrl } = require("@/lib/syncFunction");
+                await syncAvatarUrl(walletAddress, publicUrl);
               } catch {}
             }
           } catch (err: any) {
@@ -225,28 +218,27 @@ export function useUser(walletAddress: string | null) {
 }
 
 /**
- * Try to sync local user to Supabase in background.
+ * Try to sync local user to Supabase via Edge Function.
  * Non-blocking, never throws.
  */
 async function trySyncToSupabase(wallet: string, user: LocalUser) {
   try {
-    const { supabase } = require("@/lib/supabase");
-    const payload: Record<string, any> = {
-      wallet,
+    const { syncUser } = require("@/lib/syncFunction");
+    const fields: Record<string, unknown> = {
       username: user.username || null,
       xp: user.xp,
       streak: user.streak,
-      updated_at: new Date().toISOString(),
+      level: user.level,
     };
     // Sync avatar if it's a public URL or a base64 data URI (not a local file:// path)
     if (
       user.avatarUri?.startsWith("http") ||
       user.avatarUri?.startsWith("data:")
     ) {
-      payload.avatar_url = user.avatarUri;
+      fields.avatar_url = user.avatarUri;
     }
-    await supabase.from("users").upsert(payload, { onConflict: "wallet" });
+    await syncUser(wallet, fields);
   } catch {
-    // Supabase not available — that's fine, local data is the source of truth
+    // Sync not available — that's fine, local data is the source of truth
   }
 }

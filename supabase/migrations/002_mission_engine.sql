@@ -132,19 +132,28 @@ CREATE POLICY "Templates are viewable by everyone"
 CREATE POLICY "Instances are viewable by everyone" 
   ON mission_instances FOR SELECT USING (true);
 
--- Completions: anyone can read, users can insert for themselves
+-- Completions: anyone can read, only service_role can write
 CREATE POLICY "Completions are viewable by everyone" 
   ON mission_completions FOR SELECT USING (true);
 
-CREATE POLICY "Users can submit completions" 
-  ON mission_completions FOR INSERT WITH CHECK (true);
+CREATE POLICY "mission_completions_insert_service_only" 
+  ON mission_completions FOR INSERT 
+  WITH CHECK (
+    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
+  );
 
-CREATE POLICY "Users can update own completions" 
-  ON mission_completions FOR UPDATE USING (true);
+CREATE POLICY "mission_completions_update_service_only" 
+  ON mission_completions FOR UPDATE 
+  USING (
+    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
+  );
 
--- ─── Allow inserts to mission_instances (for generation) ──
-CREATE POLICY "Allow mission instance generation" 
-  ON mission_instances FOR INSERT WITH CHECK (true);
+-- Only service_role can generate mission instances
+CREATE POLICY "instances_insert_service_only" 
+  ON mission_instances FOR INSERT 
+  WITH CHECK (
+    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
+  );
 
 -- ─── Seed mission templates ──────────────────────────
 INSERT INTO mission_templates (title, description, category, verification_type, verification_config, recurrence, xp_reward, sort_order) VALUES

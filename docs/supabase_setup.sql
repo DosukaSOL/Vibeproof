@@ -38,18 +38,30 @@ create policy "users_select_policy"
   for select
   using (true);
 
--- Users can update their own profile
-create policy "users_update_policy"
-  on public.users
-  for update
-  using (true)
-  with check (true);
-
--- Only backend can insert (or service role)
-create policy "users_insert_policy"
+-- Only service_role can write users
+create policy "users_insert_service_only"
   on public.users
   for insert
-  with check (true);
+  with check (
+    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
+  );
+
+create policy "users_update_service_only"
+  on public.users
+  for update
+  using (
+    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
+  )
+  with check (
+    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
+  );
+
+create policy "users_delete_service_only"
+  on public.users
+  for delete
+  using (
+    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
+  );
 
 
 -- =====================
@@ -79,11 +91,13 @@ create policy "missions_select_policy"
   for select
   using (active = true);
 
--- Only backend/admin can insert/update
-create policy "missions_admin_policy"
+-- Only service_role can write missions
+create policy "missions_insert_service_only"
   on public.missions
   for insert
-  with check (true);
+  with check (
+    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
+  );
 
 
 -- =====================
@@ -108,24 +122,29 @@ create index if not exists completions_verified_idx on completions(verified);
 -- Enable RLS
 alter table public.completions enable row level security;
 
--- Users can see their own completions
+-- Users can see all completions
 create policy "completions_select_policy"
   on public.completions
   for select
   using (true);
 
--- Users can submit completions
-create policy "completions_insert_policy"
+-- Only service_role can write completions
+create policy "completions_insert_service_only"
   on public.completions
   for insert
-  with check (true);
+  with check (
+    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
+  );
 
--- Backend/admin can verify
-create policy "completions_update_policy"
+create policy "completions_update_service_only"
   on public.completions
   for update
-  using (true)
-  with check (true);
+  using (
+    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
+  )
+  with check (
+    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role'
+  );
 
 
 -- =====================
