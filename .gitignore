@@ -13,4 +13,6 @@ expo-env.d.ts
 android/
 app-preview.html
 build-*.apk
+builds/
+*.apk
 supabase/.temp/
