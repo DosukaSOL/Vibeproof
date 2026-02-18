@@ -194,6 +194,111 @@ CREATE POLICY "mission_completions_update_service_only"
   );
 
 
+-- ─── QUEST COMPLETIONS TABLE (live DB) ───────────────
+-- Exists in live database; fix overly permissive RLS
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'quest_completions') THEN
+    -- Drop any permissive write policies
+    DROP POLICY IF EXISTS "Enable insert for all users" ON public.quest_completions;
+    DROP POLICY IF EXISTS "Enable update for all users" ON public.quest_completions;
+    DROP POLICY IF EXISTS "Enable delete for all users" ON public.quest_completions;
+    DROP POLICY IF EXISTS "Allow insert" ON public.quest_completions;
+    DROP POLICY IF EXISTS "Allow update" ON public.quest_completions;
+    DROP POLICY IF EXISTS "Allow delete" ON public.quest_completions;
+    DROP POLICY IF EXISTS "quest_completions_insert_policy" ON public.quest_completions;
+    DROP POLICY IF EXISTS "quest_completions_update_policy" ON public.quest_completions;
+    DROP POLICY IF EXISTS "quest_completions_delete_policy" ON public.quest_completions;
+
+    -- Ensure RLS is enabled
+    ALTER TABLE public.quest_completions ENABLE ROW LEVEL SECURITY;
+
+    -- Keep SELECT public, lock down writes
+    CREATE POLICY "quest_completions_select_public"
+      ON public.quest_completions FOR SELECT USING (true);
+    CREATE POLICY "quest_completions_insert_service_only"
+      ON public.quest_completions FOR INSERT
+      WITH CHECK ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role');
+    CREATE POLICY "quest_completions_update_service_only"
+      ON public.quest_completions FOR UPDATE
+      USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role')
+      WITH CHECK ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role');
+    CREATE POLICY "quest_completions_delete_service_only"
+      ON public.quest_completions FOR DELETE
+      USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role');
+  END IF;
+END $$;
+
+
+-- ─── QUEST STATS TABLE (live DB) ─────────────────────
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'quest_stats') THEN
+    DROP POLICY IF EXISTS "Enable insert for all users" ON public.quest_stats;
+    DROP POLICY IF EXISTS "Enable update for all users" ON public.quest_stats;
+    DROP POLICY IF EXISTS "Enable delete for all users" ON public.quest_stats;
+    DROP POLICY IF EXISTS "Allow insert" ON public.quest_stats;
+    DROP POLICY IF EXISTS "Allow update" ON public.quest_stats;
+    DROP POLICY IF EXISTS "Allow delete" ON public.quest_stats;
+    DROP POLICY IF EXISTS "quest_stats_insert_policy" ON public.quest_stats;
+    DROP POLICY IF EXISTS "quest_stats_update_policy" ON public.quest_stats;
+    DROP POLICY IF EXISTS "quest_stats_delete_policy" ON public.quest_stats;
+
+    ALTER TABLE public.quest_stats ENABLE ROW LEVEL SECURITY;
+
+    CREATE POLICY "quest_stats_select_public"
+      ON public.quest_stats FOR SELECT USING (true);
+    CREATE POLICY "quest_stats_insert_service_only"
+      ON public.quest_stats FOR INSERT
+      WITH CHECK ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role');
+    CREATE POLICY "quest_stats_update_service_only"
+      ON public.quest_stats FOR UPDATE
+      USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role')
+      WITH CHECK ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role');
+    CREATE POLICY "quest_stats_delete_service_only"
+      ON public.quest_stats FOR DELETE
+      USING ((current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'service_role');
+  END IF;
+END $$;
+
+
+-- ─── FIX FUNCTION SEARCH PATH (3 functions) ─────────
+
+-- Fix: on_quest_completion_insert — set search_path to prevent path injection
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'on_quest_completion_insert') THEN
+    ALTER FUNCTION public.on_quest_completion_insert() SET search_path = public;
+  END IF;
+END $$;
+
+-- Fix: complete_quest — set search_path
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'complete_quest') THEN
+    EXECUTE format(
+      'ALTER FUNCTION public.complete_quest(%s) SET search_path = public',
+      (SELECT pg_get_function_identity_arguments(oid) FROM pg_proc WHERE proname = 'complete_quest' LIMIT 1)
+    );
+  END IF;
+END $$;
+
+-- Fix: increment_quest_completion_count — set search_path
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'increment_quest_completion_count') THEN
+    EXECUTE format(
+      'ALTER FUNCTION public.increment_quest_completion_count(%s) SET search_path = public',
+      (SELECT pg_get_function_identity_arguments(oid) FROM pg_proc WHERE proname = 'increment_quest_completion_count' LIMIT 1)
+    );
+  END IF;
+END $$;
+
+
+-- ─── FIX SEARCH PATH for our migration functions too ──
+
+ALTER FUNCTION public.get_user_rank(text) SET search_path = public;
+ALTER FUNCTION public.add_user_xp(text, integer) SET search_path = public;
+ALTER FUNCTION public.generate_daily_missions() SET search_path = public;
+
+
 -- ─── STORAGE: avatars bucket ─────────────────────────
 -- If the avatars bucket exists, lock it down too.
 -- Only service_role should upload; public reads are fine.
@@ -212,6 +317,10 @@ CREATE POLICY "mission_completions_update_service_only"
 -- 🔒 INSERT on all tables: service_role only
 -- 🔒 UPDATE on all tables: service_role only
 -- 🔒 DELETE on all tables: service_role only
+-- 🔒 quest_completions: locked down (was USING true)
+-- 🔒 quest_stats: locked down (was USING true)
+-- 🔒 3 quest functions: search_path set to 'public'
+-- 🔒 3 migration functions: search_path set to 'public'
 --
 -- The app's anon key can READ everything but WRITE nothing.
 -- All writes go through the sync-user Edge Function which uses service_role.
