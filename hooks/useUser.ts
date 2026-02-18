@@ -3,9 +3,15 @@
  * Manages user profile using local storage (offline-first).
  * Optionally syncs to Supabase in background.
  */
+import { checkAchievements } from "@/lib/achievements";
 import {
+    addUnlockedAchievement,
     createLocalUser,
+    getCompletions,
     getLocalUser,
+    getSocialLinks,
+    getUnlockedAchievements,
+    LocalCompletion,
     LocalUser,
     updateAvatarUri,
     updateLocalUsername,
@@ -16,6 +22,8 @@ export interface UserState {
   user: LocalUser | null;
   isLoading: boolean;
   error: string | null;
+  unlockedBadgeIds: string[];
+  completions: LocalCompletion[];
 }
 
 export function useUser(walletAddress: string | null) {
@@ -23,6 +31,8 @@ export function useUser(walletAddress: string | null) {
     user: null,
     isLoading: false,
     error: null,
+    unlockedBadgeIds: [],
+    completions: [],
   });
 
   /**
@@ -30,7 +40,7 @@ export function useUser(walletAddress: string | null) {
    */
   useEffect(() => {
     if (!walletAddress) {
-      setState({ user: null, isLoading: false, error: null });
+      setState({ user: null, isLoading: false, error: null, unlockedBadgeIds: [], completions: [] });
       return;
     }
 
@@ -39,10 +49,29 @@ export function useUser(walletAddress: string | null) {
         setState((prev) => ({ ...prev, isLoading: true, error: null }));
         // Get or create local user
         const userData = await createLocalUser(walletAddress);
+        const comps = await getCompletions(walletAddress);
+        const badges = await getUnlockedAchievements(walletAddress);
+        const socialLinks = await getSocialLinks(walletAddress);
+
+        // Check for newly unlocked achievements
+        const newBadges = checkAchievements(
+          { user: userData, completions: comps, socialLinks },
+          badges
+        );
+        // Save any newly unlocked ones
+        for (const id of newBadges) {
+          await addUnlockedAchievement(walletAddress, id);
+        }
+        const updatedBadges = newBadges.length > 0
+          ? await getUnlockedAchievements(walletAddress)
+          : badges;
+
         setState((prev) => ({
           ...prev,
           user: userData,
           isLoading: false,
+          unlockedBadgeIds: updatedBadges,
+          completions: comps,
         }));
 
         // Try Supabase sync in background (non-blocking)
@@ -102,10 +131,25 @@ export function useUser(walletAddress: string | null) {
     try {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
       const userData = await getLocalUser(walletAddress);
+      const comps = await getCompletions(walletAddress);
+      const socialLinks = await getSocialLinks(walletAddress);
+      const existingBadges = await getUnlockedAchievements(walletAddress);
+      if (userData) {
+        const newBadges = checkAchievements(
+          { user: userData, completions: comps, socialLinks },
+          existingBadges
+        );
+        for (const id of newBadges) {
+          await addUnlockedAchievement(walletAddress, id);
+        }
+      }
+      const badges = await getUnlockedAchievements(walletAddress);
       setState((prev) => ({
         ...prev,
         user: userData,
         isLoading: false,
+        unlockedBadgeIds: badges,
+        completions: comps,
       }));
     } catch (error: any) {
       const message = error?.message || "Failed to refresh user";
@@ -172,6 +216,8 @@ export function useUser(walletAddress: string | null) {
     user: state.user,
     isLoading: state.isLoading,
     error: state.error,
+    unlockedBadgeIds: state.unlockedBadgeIds,
+    completions: state.completions,
     setUsername,
     setAvatar,
     refresh,

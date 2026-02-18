@@ -3,7 +3,9 @@
  * Display user stats and progression with animated counters + XP progress bar
  */
 import { AnimatedNumber } from "@/components/AnimatedNumber";
+import { RankBadge } from "@/components/RankBadge";
 import { LocalUser } from "@/lib/localStore";
+import { getNextRankXp, getRankForXp, getRankProgress } from "@/lib/ranks";
 import { T } from "@/lib/theme";
 import { useEffect, useRef } from "react";
 import { Animated, Easing, Text, View } from "react-native";
@@ -26,10 +28,31 @@ export function StatsPanel({ user, isLoading }: StatsPanelProps) {
 
   const xpInLevel = user.xp % 1000;
   const xpProgress = xpInLevel / 1000;
+  const rank = getRankForXp(user.xp);
+  const nextRankXp = getNextRankXp(user.xp);
+  const rankProgress = getRankProgress(user.xp);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Your Stats</Text>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+        <Text style={styles.title}>Your Stats</Text>
+        <RankBadge xp={user.xp} size="medium" />
+      </View>
+
+      {/* Rank Progress */}
+      {nextRankXp !== null && (
+        <View style={styles.xpBarSection}>
+          <View style={styles.xpBarHeader}>
+            <Text style={styles.xpLevelLabel}>{rank.name}</Text>
+            <Text style={styles.xpLevelLabel}>
+              {Math.round(rankProgress * 100)}% to next rank
+            </Text>
+          </View>
+          <View style={styles.xpBarTrack}>
+            <XpBarFill progress={rankProgress} />
+          </View>
+        </View>
+      )}
 
       {/* XP Progress Bar */}
       <View style={styles.xpBarSection}>

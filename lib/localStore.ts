@@ -8,6 +8,9 @@ const KEYS = {
   USER: "vp_user",
   COMPLETIONS: "vp_completions",
   SOCIAL_LINKS: "vp_social",
+  ACHIEVEMENTS: "vp_achievements",
+  SETTINGS: "vp_settings",
+  ONBOARDED: "vp_onboarded",
 };
 
 // ─── Types ──────────────────────────────────────────────
@@ -115,10 +118,11 @@ export async function updateAvatarUri(
 export async function addXP(
   wallet: string,
   amount: number
-): Promise<LocalUser> {
+): Promise<{ user: LocalUser; previousLevel: number }> {
   const user = await getLocalUser(wallet);
   if (!user) throw new Error("User not found");
 
+  const previousLevel = user.level;
   user.xp += amount;
   user.level = Math.floor(user.xp / 1000) + 1;
   user.missionsCompleted += 1;
@@ -134,7 +138,7 @@ export async function addXP(
   user.lastActiveDate = today;
 
   await saveLocalUser(user);
-  return user;
+  return { user, previousLevel };
 }
 
 // ─── Completions CRUD ───────────────────────────────────
@@ -237,4 +241,107 @@ function todayStr(): string {
 
 function yesterdayStr(): string {
   return new Date(Date.now() - 86400000).toISOString().split("T")[0];
+}
+
+// ─── Streak XP Multiplier ───────────────────────────────
+
+/**
+ * Get the XP multiplier based on current streak.
+ * 3d = 1.25x, 7d = 1.5x, 14d = 1.75x, 30d = 2.0x
+ */
+export function getStreakMultiplier(streak: number): number {
+  if (streak >= 30) return 2.0;
+  if (streak >= 14) return 1.75;
+  if (streak >= 7) return 1.5;
+  if (streak >= 3) return 1.25;
+  return 1.0;
+}
+
+// ─── Achievements Storage ───────────────────────────────
+
+export async function getUnlockedAchievements(
+  wallet: string
+): Promise<string[]> {
+  try {
+    const raw = await AsyncStorage.getItem(`${KEYS.ACHIEVEMENTS}_${wallet}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function saveUnlockedAchievements(
+  wallet: string,
+  ids: string[]
+): Promise<void> {
+  await AsyncStorage.setItem(
+    `${KEYS.ACHIEVEMENTS}_${wallet}`,
+    JSON.stringify(ids)
+  );
+}
+
+export async function addUnlockedAchievement(
+  wallet: string,
+  achievementId: string
+): Promise<string[]> {
+  const current = await getUnlockedAchievements(wallet);
+  if (!current.includes(achievementId)) {
+    current.push(achievementId);
+    await saveUnlockedAchievements(wallet, current);
+  }
+  return current;
+}
+
+// ─── App Settings ───────────────────────────────────────
+
+export interface AppSettings {
+  notificationsEnabled: boolean;
+  soundsEnabled: boolean;
+  hapticsEnabled: boolean;
+}
+
+const DEFAULT_SETTINGS: AppSettings = {
+  notificationsEnabled: true,
+  soundsEnabled: true,
+  hapticsEnabled: true,
+};
+
+export async function getSettings(): Promise<AppSettings> {
+  try {
+    const raw = await AsyncStorage.getItem(KEYS.SETTINGS);
+    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : DEFAULT_SETTINGS;
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
+export async function saveSettings(settings: AppSettings): Promise<void> {
+  await AsyncStorage.setItem(KEYS.SETTINGS, JSON.stringify(settings));
+}
+
+// ─── Onboarding ─────────────────────────────────────────
+
+export async function hasSeenOnboarding(): Promise<boolean> {
+  try {
+    const val = await AsyncStorage.getItem(KEYS.ONBOARDED);
+    return val === "true";
+  } catch {
+    return false;
+  }
+}
+
+export async function markOnboardingDone(): Promise<void> {
+  await AsyncStorage.setItem(KEYS.ONBOARDED, "true");
+}
+
+// ─── Clear All Data ─────────────────────────────────────
+
+export async function clearAllData(wallet: string): Promise<void> {
+  const keys = [
+    `${KEYS.USER}_${wallet}`,
+    `${KEYS.COMPLETIONS}_${wallet}`,
+    `${KEYS.SOCIAL_LINKS}_${wallet}`,
+    `${KEYS.ACHIEVEMENTS}_${wallet}`,
+  ];
+  await AsyncStorage.multiRemove(keys);
 }

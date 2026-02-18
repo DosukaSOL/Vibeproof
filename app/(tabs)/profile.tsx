@@ -2,11 +2,16 @@
  * Profile Tab
  * User identity, wallet, and stats
  */
+import { AchievementBadge } from "@/components/AchievementBadge";
+import { ActivityFeed } from "@/components/ActivityFeed";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { AvatarPicker } from "@/components/AvatarPicker";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { FadeInView } from "@/components/FadeInView";
 import { GitHubLinkCard } from "@/components/GitHubLinkCard";
+import { OfflineBanner } from "@/components/OfflineBanner";
+import { ProfileCompletionMeter } from "@/components/ProfileCompletionMeter";
+import { RankBadge } from "@/components/RankBadge";
 import { ShareStatsCard } from "@/components/ShareStatsCard";
 import { StatsPanel } from "@/components/StatsPanel";
 import { StreakCard } from "@/components/StreakCard";
@@ -16,8 +21,10 @@ import { useGitHubLink } from "@/hooks/useGitHubLink";
 import { useUser } from "@/hooks/useUser";
 import { useWallet } from "@/hooks/useWallet";
 import { useXLink } from "@/hooks/useXLink";
+import { ACHIEVEMENTS } from "@/lib/achievements";
 import { hapticSuccess } from "@/lib/haptics";
 import { setupDailyReminder } from "@/lib/notifications";
+
 import { T } from "@/lib/theme";
 import { useEffect, useState } from "react";
 import {
@@ -32,7 +39,7 @@ import {
 
 export default function ProfileScreen() {
   const { address, isConnected } = useWallet();
-  const { user, isLoading, error, setUsername, setAvatar, refresh } = useUser(
+  const { user, isLoading, error, setUsername, setAvatar, refresh, unlockedBadgeIds, completions } = useUser(
     isConnected ? address : null
   );
   const xLink = useXLink(isConnected ? address : null);
@@ -41,6 +48,8 @@ export default function ProfileScreen() {
   const [newUsername, setNewUsername] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+
 
   // Sync username when user changes
   useEffect(() => {
@@ -114,9 +123,15 @@ export default function ProfileScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={T.accent} colors={[T.accent]} progressBackgroundColor={T.surface} />
       }
     >
+      {/* Offline Banner */}
+      <OfflineBanner />
+
       <FadeInView index={0}>
         <View style={styles.header}>
-          <Text style={styles.title}>Profile</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <Text style={styles.title}>Profile</Text>
+            {user && <RankBadge xp={user.xp} size="medium" />}
+          </View>
           <Text style={styles.subtitle}>Your Web3 Identity</Text>
         </View>
       </FadeInView>
@@ -133,9 +148,25 @@ export default function ProfileScreen() {
         />
       </FadeInView>
 
-      {/* Avatar */}
+      {/* Profile Completion Meter */}
       {isConnected && user && (
         <FadeInView index={2}>
+          <ProfileCompletionMeter
+            items={[
+              { label: "Connect wallet", icon: "🔗", done: true },
+              { label: "Set username", icon: "✏️", done: !!user.username },
+              { label: "Set avatar", icon: "📷", done: !!user.avatarUri },
+              { label: "Link X account", icon: "𝕏", done: xLink.status.isLinked },
+              { label: "Link GitHub", icon: "🐙", done: gitHubLink.status.isLinked },
+              { label: "Complete a mission", icon: "🎯", done: user.missionsCompleted > 0 },
+            ]}
+          />
+        </FadeInView>
+      )}
+
+      {/* Avatar */}
+      {isConnected && user && (
+        <FadeInView index={3}>
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Profile Photo</Text>
             <AvatarPicker
@@ -154,34 +185,63 @@ export default function ProfileScreen() {
       )}
 
       {/* Stats Section */}
-      <FadeInView index={3}>
+      <FadeInView index={4}>
         <StatsPanel user={user} isLoading={isLoading} />
       </FadeInView>
 
       {/* Streak Card */}
       {isConnected && user && (
-        <FadeInView index={4}>
+        <FadeInView index={5}>
           <StreakCard user={user} />
+        </FadeInView>
+      )}
+
+      {/* Achievements */}
+      {isConnected && user && (
+        <FadeInView index={6}>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Achievements</Text>
+            <View style={styles.badgeGrid}>
+              {ACHIEVEMENTS.map((a) => (
+                <AchievementBadge
+                  key={a.id}
+                  achievement={a}
+                  unlocked={unlockedBadgeIds.includes(a.id)}
+                  compact
+                />
+              ))}
+            </View>
+            <Text style={styles.infoText}>
+              {unlockedBadgeIds.length}/{ACHIEVEMENTS.length} unlocked
+            </Text>
+          </View>
+        </FadeInView>
+      )}
+
+      {/* Activity Feed */}
+      {isConnected && completions.length > 0 && (
+        <FadeInView index={7}>
+          <ActivityFeed completions={completions} />
         </FadeInView>
       )}
 
       {/* X Account Linking */}
       {isConnected && (
-        <FadeInView index={5}>
+        <FadeInView index={8}>
           <XLinkCard xLink={xLink} />
         </FadeInView>
       )}
 
       {/* GitHub Account Linking */}
       {isConnected && (
-        <FadeInView index={6}>
+        <FadeInView index={9}>
           <GitHubLinkCard gitHubLink={gitHubLink} />
         </FadeInView>
       )}
 
       {/* Username Section */}
       {isConnected && (
-        <FadeInView index={7}>
+        <FadeInView index={10}>
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Username</Text>
             <TextInput
@@ -217,13 +277,13 @@ export default function ProfileScreen() {
 
       {/* Share Achievement Card */}
       {isConnected && user && (
-        <FadeInView index={8}>
+        <FadeInView index={11}>
           <ShareStatsCard user={user} />
         </FadeInView>
       )}
 
       {/* Info Section */}
-      <FadeInView index={9}>
+      <FadeInView index={12}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>About</Text>
           <Text style={styles.infoText}>
@@ -270,6 +330,11 @@ const styles = {
     fontSize: 16,
     fontWeight: "700" as const,
     color: T.text,
+  },
+  badgeGrid: {
+    flexDirection: "row" as const,
+    flexWrap: "wrap" as const,
+    gap: 8,
   },
   input: {
     borderWidth: 1,

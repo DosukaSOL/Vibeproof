@@ -19,8 +19,9 @@ export function useLeaderboard(walletAddress: string | null) {
   const [users, setUsers] = useState<LeaderboardUser[]>([]);
   const [userRank, setUserRank] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const PAGE_SIZE = 25;
 
   const load = useCallback(async () => {
     try {
@@ -36,7 +37,7 @@ export function useLeaderboard(walletAddress: string | null) {
           .from("users")
           .select("*")
           .order("xp", { ascending: false })
-          .limit(50);
+          .range(0, PAGE_SIZE - 1);
         if (!dbError && data && data.length > 0) {
           leaderboardUsers = data.map((u: any, idx: number) => ({
             wallet: u.wallet || "",
@@ -48,6 +49,7 @@ export function useLeaderboard(walletAddress: string | null) {
             avatarUri: u.avatar_url || undefined,
           }));
           fromSupabase = true;
+          setHasMore(data.length >= PAGE_SIZE);
         }
       } catch {
         // Supabase not available — use local fallback
@@ -132,7 +134,38 @@ export function useLeaderboard(walletAddress: string | null) {
     load();
   }, [load]);
 
-  const loadMore = useCallback(async () => {}, []);
+  const loadMore = useCallback(async () => {
+    if (!hasMore || isLoading) return;
+    try {
+      setIsLoading(true);
+      const offset = users.length;
+      const { supabase } = require("@/lib/supabase");
+      const { data, error: dbError } = await supabase
+        .from("users")
+        .select("*")
+        .order("xp", { ascending: false })
+        .range(offset, offset + PAGE_SIZE - 1);
+      if (!dbError && data && data.length > 0) {
+        const newUsers: LeaderboardUser[] = data.map((u: any, idx: number) => ({
+          wallet: u.wallet || "",
+          username: u.username || "",
+          xp: u.xp || 0,
+          streak: u.streak || 0,
+          rank: offset + idx + 1,
+          level: Math.floor((u.xp || 0) / 1000) + 1,
+          avatarUri: u.avatar_url || undefined,
+        }));
+        setUsers((prev) => [...prev, ...newUsers]);
+        setHasMore(data.length >= PAGE_SIZE);
+      } else {
+        setHasMore(false);
+      }
+    } catch {
+      setHasMore(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [hasMore, isLoading, users.length]);
   const refresh = useCallback(async () => {
     await load();
   }, [load]);

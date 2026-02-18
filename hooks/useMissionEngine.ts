@@ -4,39 +4,43 @@
  * No Supabase dependency — missions work fully offline.
  */
 import {
-  getDailyMissions,
-  getOneTimeMissions,
-  MissionTemplate,
-} from "@/lib/missionTemplates";
-import {
-  addCompletion,
-  addXP,
-  getCompletions,
-  getLocalUser,
-  hasSocialLink,
-  isDailyMissionCompleted,
-  isOneTimeMissionCompleted,
-  LocalCompletion,
+    addCompletion,
+    addXP,
+    getCompletions,
+    getLocalUser,
+    getStreakMultiplier,
+    hasSocialLink,
+    LocalCompletion
 } from "@/lib/localStore";
 import { verifyMission } from "@/lib/localVerify";
+import {
+    getDailyMissions,
+    getOneTimeMissions,
+    getWeeklyMissions,
+    MissionTemplate,
+} from "@/lib/missionTemplates";
 import { useCallback, useEffect, useState } from "react";
 
-export type MissionTab = "repeatable" | "one_time";
+export type MissionTab = "repeatable" | "one_time" | "weekly";
 
 export interface MissionEngineState {
   repeatableMissions: MissionTemplate[];
   oneTimeMissions: MissionTemplate[];
+  weeklyMissions: MissionTemplate[];
   completedIds: Set<string>;
   isLoading: boolean;
   isVerifying: string | null;
   error: string | null;
   activeTab: MissionTab;
   verificationStatus: Record<string, "idle" | "verifying" | "verified" | "failed">;
+  streakMultiplier: number;
+  lastLevelUp: number | null;
 }
 
 export function useMissionEngine(walletAddress: string | null) {
   const [repeatableMissions, setRepeatableMissions] = useState<MissionTemplate[]>([]);
   const [oneTimeMissions, setOneTimeMissions] = useState<MissionTemplate[]>([]);
+  const [weeklyMissions, setWeeklyMissions] = useState<MissionTemplate[]>([]);
   const [completions, setCompletions] = useState<LocalCompletion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,11 +48,17 @@ export function useMissionEngine(walletAddress: string | null) {
   const [verificationStatus, setVerificationStatus] = useState<
     Record<string, "idle" | "verifying" | "verified" | "failed">
   >({});
+  const [streakMultiplier, setStreakMultiplier] = useState(1);
+  const [lastLevelUp, setLastLevelUp] = useState<number | null>(null);
+
+  /** Dismiss level-up celebration */
+  const clearLevelUp = useCallback(() => setLastLevelUp(null), []);
 
   const load = useCallback(async () => {
     if (!walletAddress) {
       setRepeatableMissions([]);
       setOneTimeMissions([]);
+      setWeeklyMissions([]);
       setCompletions([]);
       return;
     }
@@ -59,10 +69,17 @@ export function useMissionEngine(walletAddress: string | null) {
       const today = new Date();
       const daily = getDailyMissions(today);
       const oneTime = getOneTimeMissions();
+      const weekly = getWeeklyMissions(today);
       const userCompletions = await getCompletions(walletAddress);
+
+      // Load streak multiplier
+      const user = await getLocalUser(walletAddress);
+      const mult = getStreakMultiplier(user?.streak ?? 0);
+      setStreakMultiplier(mult);
 
       setRepeatableMissions(daily);
       setOneTimeMissions(oneTime);
+      setWeeklyMissions(weekly);
       setCompletions(userCompletions);
 
       await autoCompleteOneTimeMissions(walletAddress, oneTime, userCompletions);
@@ -97,6 +114,15 @@ export function useMissionEngine(walletAddress: string | null) {
           shouldAutoComplete = !!user?.username && user.username.length > 0;
         } else if (action === "daily_checkin") {
           shouldAutoComplete = true;
+        } else if (action === "set_avatar") {
+          const user = await getLocalUser(wallet);
+          shouldAutoComplete = !!user?.avatarUri && user.avatarUri.length > 0;
+        } else if (action === "first_daily") {
+          // Auto-complete if user has at least 1 daily mission completion
+          const hasDailyCompletion = existingCompletions.some(
+            (c) => c.missionId.startsWith("daily_")
+          );
+          shouldAutoComplete = hasDailyCompletion;
         }
       } else if (mission.verification_type === "social_link") {
         const provider = mission.verification_config?.provider;
@@ -161,19 +187,28 @@ export function useMissionEngine(walletAddress: string | null) {
         );
 
         if (result.verified) {
+          const effectiveXP = Math.round(mission.xp_reward * streakMultiplier);
           await addCompletion(walletAddress, {
             missionId: mission.id,
             completedAt: new Date().toISOString(),
-            xpAwarded: mission.xp_reward,
+            xpAwarded: effectiveXP,
             date: new Date().toISOString().split("T")[0],
           });
-          await addXP(walletAddress, mission.xp_reward);
+          const { previousLevel } = await addXP(walletAddress, effectiveXP);
+          const user = await getLocalUser(walletAddress);
+          if (user && user.level > previousLevel) {
+            setLastLevelUp(user.level);
+          }
+          // Refresh multiplier after XP gain (streak may have changed)
+          const mult = getStreakMultiplier(user?.streak ?? 0);
+          setStreakMultiplier(mult);
+
           setCompletions((prev) => [
             ...prev,
             {
               missionId: mission.id,
               completedAt: new Date().toISOString(),
-              xpAwarded: mission.xp_reward,
+              xpAwarded: effectiveXP,
               date: new Date().toISOString().split("T")[0],
             },
           ]);
@@ -188,7 +223,7 @@ export function useMissionEngine(walletAddress: string | null) {
         throw e;
       }
     },
-    [walletAddress]
+    [walletAddress, streakMultiplier]
   );
 
   const verifyOneTime = useCallback(
@@ -209,6 +244,7 @@ export function useMissionEngine(walletAddress: string | null) {
     ) => {
       if (!walletAddress) throw new Error("Wallet not connected");
       const missionId = opts.instanceId || opts.templateId || "";
+      const effectiveXP = Math.round(xpReward * streakMultiplier);
 
       setVerificationStatus((prev) => ({ ...prev, [missionId]: "verifying" }));
 
@@ -216,16 +252,23 @@ export function useMissionEngine(walletAddress: string | null) {
         await addCompletion(walletAddress, {
           missionId,
           completedAt: new Date().toISOString(),
-          xpAwarded: xpReward,
+          xpAwarded: effectiveXP,
           date: new Date().toISOString().split("T")[0],
         });
-        await addXP(walletAddress, xpReward);
+        const { previousLevel } = await addXP(walletAddress, effectiveXP);
+        const user = await getLocalUser(walletAddress);
+        if (user && user.level > previousLevel) {
+          setLastLevelUp(user.level);
+        }
+        const mult = getStreakMultiplier(user?.streak ?? 0);
+        setStreakMultiplier(mult);
+
         setCompletions((prev) => [
           ...prev,
           {
             missionId,
             completedAt: new Date().toISOString(),
-            xpAwarded: xpReward,
+            xpAwarded: effectiveXP,
             date: new Date().toISOString().split("T")[0],
           },
         ]);
@@ -236,7 +279,7 @@ export function useMissionEngine(walletAddress: string | null) {
         throw e;
       }
     },
-    [walletAddress]
+    [walletAddress, streakMultiplier]
   );
 
   const refresh = useCallback(async () => { await load(); }, [load]);
@@ -244,12 +287,16 @@ export function useMissionEngine(walletAddress: string | null) {
   return {
     repeatableMissions,
     oneTimeMissions,
+    weeklyMissions,
     completions,
     isLoading,
     error,
     activeTab,
     setActiveTab,
     verificationStatus,
+    streakMultiplier,
+    lastLevelUp,
+    clearLevelUp,
     isInstanceCompleted,
     isOneTimeCompleted,
     getVerificationStatus,

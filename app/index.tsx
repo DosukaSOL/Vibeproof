@@ -1,3 +1,4 @@
+import { hasSeenOnboarding } from "@/lib/localStore";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -151,12 +152,16 @@ export default function SplashScreen() {
         // Small delay to let native audio resources release
         await new Promise((r) => setTimeout(r, 50));
 
+        // Check onboarding
+        const seen = await hasSeenOnboarding();
+        const destination = seen ? "/(tabs)/profile" : "/onboarding";
+
         try {
-          router.replace("/(tabs)/profile");
+          router.replace(destination as any);
         } catch (e) {
           console.error("[Splash] Navigation failed:", e);
           setTimeout(() => {
-            try { router.replace("/(tabs)/profile"); } catch {}
+            try { router.replace(destination as any); } catch {}
           }, 500);
         }
       })();

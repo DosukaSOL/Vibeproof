@@ -1,10 +1,11 @@
 /**
  * Missions Tab
- * Complete missions to earn XP — with Repeatable / One-time tabs
+ * Complete missions to earn XP — with Daily / One-time / Weekly tabs
  */
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { EngineMissionCard } from "@/components/EngineMissionCard";
 import { FadeInView } from "@/components/FadeInView";
+import { LevelUpCelebration } from "@/components/LevelUpCelebration";
 import { MissionTab, useMissionEngine } from "@/hooks/useMissionEngine";
 import { useWallet } from "@/hooks/useWallet";
 import { hapticSelection } from "@/lib/haptics";
@@ -39,6 +40,11 @@ export default function MissionsScreen() {
     return engine.oneTimeMissions.filter((m) => m.tag === activeFilter);
   }, [engine.oneTimeMissions, activeFilter]);
 
+  const filteredWeekly = useMemo(() => {
+    if (activeFilter === "all") return engine.weeklyMissions;
+    return engine.weeklyMissions.filter((m) => m.tag === activeFilter);
+  }, [engine.weeklyMissions, activeFilter]);
+
   const handleRefresh = async () => {
     try {
       setIsRefreshing(true);
@@ -70,9 +76,14 @@ export default function MissionsScreen() {
 
   const repeatableCount = filteredRepeatable.length;
   const oneTimeCount = filteredOneTime.length;
+  const weeklyCount = filteredWeekly.length;
   const isRepeatable = engine.activeTab === "repeatable";
+  const isWeekly = engine.activeTab === "weekly";
 
   return (
+    <>
+    {/* Level-up celebration overlay */}
+    <LevelUpCelebration level={engine.lastLevelUp ?? 1} visible={engine.lastLevelUp !== null} onDismiss={engine.clearLevelUp} />
     <ScrollView
       contentContainerStyle={styles.container}
       refreshControl={
@@ -81,7 +92,16 @@ export default function MissionsScreen() {
     >
       <View style={styles.header}>
         <Text style={styles.title}>Missions</Text>
-        <Text style={styles.subtitle}>Earn XP by completing actions</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Text style={styles.subtitle}>Earn XP by completing actions</Text>
+          {engine.streakMultiplier > 1 && (
+            <View style={styles.multiplierBadge}>
+              <Text style={styles.multiplierText}>
+                {engine.streakMultiplier}x XP
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Category Filter Chips */}
@@ -133,16 +153,31 @@ export default function MissionsScreen() {
           </Text>
         </AnimatedPressable>
         <AnimatedPressable
-          onPress={() => handleTabSwitch("one_time")}
+          onPress={() => handleTabSwitch("weekly")}
           enableHaptics={false}
           style={{
             ...styles.tab,
-            ...(!isRepeatable ? styles.tabActive : {}),
+            ...(isWeekly ? styles.tabActive : {}),
           }}
         >
           <Text style={{
             ...styles.tabText,
-            ...(!isRepeatable ? styles.tabTextActive : {}),
+            ...(isWeekly ? styles.tabTextActive : {}),
+          }}>
+            Weekly ({weeklyCount})
+          </Text>
+        </AnimatedPressable>
+        <AnimatedPressable
+          onPress={() => handleTabSwitch("one_time")}
+          enableHaptics={false}
+          style={{
+            ...styles.tab,
+            ...(engine.activeTab === "one_time" ? styles.tabActive : {}),
+          }}
+        >
+          <Text style={{
+            ...styles.tabText,
+            ...(engine.activeTab === "one_time" ? styles.tabTextActive : {}),
           }}>
             One-time ({oneTimeCount})
           </Text>
@@ -161,7 +196,7 @@ export default function MissionsScreen() {
           <Text style={styles.loadingText}>Loading missions...</Text>
         </View>
       ) : isRepeatable ? (
-        /* ─── Repeatable Missions ─── */
+        /* ─── Daily Missions ─── */
         repeatableCount === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>✨</Text>
@@ -193,6 +228,39 @@ export default function MissionsScreen() {
             ))}
           </View>
         )
+      ) : isWeekly ? (
+        /* ─── Weekly Challenges ─── */
+        weeklyCount === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>📅</Text>
+            <Text style={styles.emptyTitle}>No Weekly Challenges</Text>
+            <Text style={styles.emptyText}>
+              New weekly challenges rotate every Monday!
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.missionsGrid}>
+            {filteredWeekly.map((mission, index) => (
+              <FadeInView key={mission.id} index={index}>
+                <EngineMissionCard
+                  mission={mission}
+                  isCompleted={engine.isInstanceCompleted(mission.id)}
+                  verificationStatus={engine.getVerificationStatus(mission.id)}
+                  onVerify={() => engine.verifyInstance(mission)}
+                  onSubmitProof={(proof) =>
+                    engine.submitManualProof(
+                      { instanceId: mission.id },
+                      proof,
+                      mission.verification_type,
+                      mission.verification_config,
+                      mission.xp_reward
+                    )
+                  }
+                />
+              </FadeInView>
+            ))}
+          </View>
+        )
       ) : (
         /* ─── One-Time Missions ─── */
         oneTimeCount === 0 ? (
@@ -200,7 +268,7 @@ export default function MissionsScreen() {
             <Text style={styles.emptyIcon}>🏅</Text>
             <Text style={styles.emptyTitle}>All Done!</Text>
             <Text style={styles.emptyText}>
-              You've completed all one-time missions. Check repeatable missions
+              You've completed all one-time missions. Check daily missions
               for more XP!
             </Text>
           </View>
@@ -221,6 +289,7 @@ export default function MissionsScreen() {
         )
       )}
     </ScrollView>
+    </>
   );
 }
 
@@ -243,6 +312,19 @@ const styles = {
     fontSize: 14,
     color: T.textSec,
     marginTop: 4,
+  },
+  multiplierBadge: {
+    backgroundColor: "#FF950020",
+    borderRadius: T.rS,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: "#FF9500",
+  },
+  multiplierText: {
+    fontSize: 12,
+    fontWeight: "700" as const,
+    color: "#FF9500",
   },
   filterScroll: {
     marginBottom: 12,

@@ -2,7 +2,7 @@
   "expo": {
     "name": "VibeProof",
     "slug": "vibeproof",
-    "version": "1.0.0",
+    "version": "3.0.0",
     "orientation": "portrait",
     "scheme": "vibeproof",
     "icon": "./assets/vpicon.png",

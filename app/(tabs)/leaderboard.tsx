@@ -3,9 +3,11 @@
  * See top users by XP — with search + tap to view profiles
  */
 import { FadeInView } from "@/components/FadeInView";
+import { RankBadge } from "@/components/RankBadge";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useWallet } from "@/hooks/useWallet";
+
 import { formatWalletAddress } from "@/lib/solana";
 import { T } from "@/lib/theme";
 import { useRouter } from "expo-router";
@@ -96,9 +98,12 @@ export default function LeaderboardScreen() {
             />
 
             <View style={styles.userInfo}>
-              <Text style={styles.username} numberOfLines={1}>
-                {user.username || formatWalletAddress(user.wallet)}
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Text style={styles.username} numberOfLines={1}>
+                  {user.username || formatWalletAddress(user.wallet)}
+                </Text>
+                <RankBadge xp={user.xp} size="small" />
+              </View>
               <Text style={styles.wallet}>
                 {formatWalletAddress(user.wallet)}
               </Text>

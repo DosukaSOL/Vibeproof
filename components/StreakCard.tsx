@@ -80,7 +80,7 @@ export function StreakCard({ user }: StreakCardProps) {
                   ? "⭐ One week strong!"
                   : "🔥 Keep it going!"}
           </Text>
-          {streak >= 7 && (
+          {streak >= 3 && (
             <Text style={styles.bonusText}>+{getStreakBonus(streak)}% XP bonus</Text>
           )}
         </View>
@@ -169,9 +169,10 @@ function getStreakMessage(streak: number): string {
 }
 
 function getStreakBonus(streak: number): number {
-  if (streak >= 30) return 25;
-  if (streak >= 14) return 15;
-  if (streak >= 7) return 10;
+  if (streak >= 30) return 100;
+  if (streak >= 14) return 75;
+  if (streak >= 7) return 50;
+  if (streak >= 3) return 25;
   return 0;
 }
 

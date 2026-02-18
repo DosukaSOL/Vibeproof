@@ -1,7 +1,7 @@
 // app/(tabs)/_layout.tsx
 import { T } from "@/lib/theme";
-import { Tabs } from "expo-router";
-import { Image, Platform, Text, View } from "react-native";
+import { Tabs, useRouter } from "expo-router";
+import { Image, Platform, Text, TouchableOpacity, View } from "react-native";
 
 const CenteredLogo = () => (
   <View style={{ alignItems: "center", justifyContent: "center" }}>
@@ -12,6 +12,19 @@ const CenteredLogo = () => (
     />
   </View>
 );
+
+const SettingsGear = () => {
+  const router = useRouter();
+  return (
+    <TouchableOpacity
+      onPress={() => router.push("/settings")}
+      style={{ paddingHorizontal: 12 }}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+    >
+      <Text style={{ fontSize: 22 }}>⚙️</Text>
+    </TouchableOpacity>
+  );
+};
 
 export default function TabsLayout() {
   return (
@@ -54,6 +67,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color }) => (
             <Text style={{ fontSize: 20, color }}>👤</Text>
           ),
+          headerRight: () => <SettingsGear />,
         }}
       />
       <Tabs.Screen
