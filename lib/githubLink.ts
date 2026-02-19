@@ -54,14 +54,33 @@ export async function saveGitHubLinkToDb(
   ghUserId: string,
   ghUsername: string
 ): Promise<void> {
-  const { syncSocialLink } = require("./syncFunction");
-  await syncSocialLink(wallet, "github", ghUserId, ghUsername);
+  try {
+    const { error } = await getSupabase()
+      .from("user_social_links")
+      .upsert(
+        {
+          user_wallet: wallet,
+          provider: "github",
+          provider_user_id: ghUserId,
+          provider_username: ghUsername,
+          last_refresh: new Date().toISOString(),
+        },
+        { onConflict: "user_wallet,provider" }
+      );
+    if (error) console.warn("[GitHub Link] DB save failed:", error.message);
+  } catch (err) {
+    console.warn("[GitHub Link] DB save failed (non-fatal):", err);
+  }
 }
 
 export async function removeGitHubLinkFromDb(wallet: string): Promise<void> {
   try {
-    const { removeSyncSocialLink } = require("./syncFunction");
-    await removeSyncSocialLink(wallet, "github");
+    const { error } = await getSupabase()
+      .from("user_social_links")
+      .delete()
+      .eq("user_wallet", wallet)
+      .eq("provider", "github");
+    if (error) console.warn("[GitHub Link] DB delete failed:", error.message);
   } catch (err) {
     console.warn("[GitHub Link] DB delete failed (non-fatal):", err);
   }

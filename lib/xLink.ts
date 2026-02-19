@@ -69,8 +69,23 @@ export async function saveXLinkToDb(
   xUserId: string,
   xUsername: string
 ): Promise<void> {
-  const { syncSocialLink } = require("./syncFunction");
-  await syncSocialLink(wallet, "x", xUserId, xUsername);
+  try {
+    const { error } = await getSupabase()
+      .from("user_social_links")
+      .upsert(
+        {
+          user_wallet: wallet,
+          provider: "x",
+          provider_user_id: xUserId,
+          provider_username: xUsername,
+          last_refresh: new Date().toISOString(),
+        },
+        { onConflict: "user_wallet,provider" }
+      );
+    if (error) console.warn("[X Link] DB save failed:", error.message);
+  } catch (err) {
+    console.warn("[X Link] DB save failed (non-fatal):", err);
+  }
 }
 
 /**
@@ -78,8 +93,12 @@ export async function saveXLinkToDb(
  */
 export async function removeXLinkFromDb(wallet: string): Promise<void> {
   try {
-    const { removeSyncSocialLink } = require("./syncFunction");
-    await removeSyncSocialLink(wallet, "x");
+    const { error } = await getSupabase()
+      .from("user_social_links")
+      .delete()
+      .eq("user_wallet", wallet)
+      .eq("provider", "x");
+    if (error) console.warn("[X Link] DB delete failed:", error.message);
   } catch (err) {
     console.warn("[X Link] DB delete failed (non-fatal):", err);
   }

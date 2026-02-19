@@ -185,10 +185,13 @@ export function useUser(walletAddress: string | null) {
               const updated2 = await updateAvatarUri(walletAddress, publicUrl);
               setState((prev) => ({ ...prev, user: updated2 }));
 
-              // Sync public URL via Edge Function
+              // Sync public URL directly to Supabase
               try {
-                const { syncAvatarUrl } = require("@/lib/syncFunction");
-                await syncAvatarUrl(walletAddress, publicUrl);
+                const { supabase } = require("@/lib/supabase");
+                await supabase
+                  .from("users")
+                  .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+                  .eq("wallet", walletAddress);
               } catch {}
             }
           } catch (err: any) {
@@ -218,26 +221,34 @@ export function useUser(walletAddress: string | null) {
 }
 
 /**
- * Try to sync local user to Supabase via Edge Function.
+ * Try to sync local user to Supabase directly via anon key.
+ * Uses upsert so it works for both new and existing users.
  * Non-blocking, never throws.
  */
 async function trySyncToSupabase(wallet: string, user: LocalUser) {
   try {
-    const { syncUser } = require("@/lib/syncFunction");
-    const fields: Record<string, unknown> = {
+    const { supabase } = require("@/lib/supabase");
+    const payload: Record<string, unknown> = {
+      wallet,
       username: user.username || null,
       xp: user.xp,
       streak: user.streak,
       level: user.level,
+      updated_at: new Date().toISOString(),
     };
-    // Sync avatar if it's a public URL or a base64 data URI (not a local file:// path)
+    // Sync avatar if it's a public URL (not a local file:// path)
     if (
       user.avatarUri?.startsWith("http") ||
       user.avatarUri?.startsWith("data:")
     ) {
-      fields.avatar_url = user.avatarUri;
+      payload.avatar_url = user.avatarUri;
     }
-    await syncUser(wallet, fields);
+    const { error } = await supabase
+      .from("users")
+      .upsert(payload, { onConflict: "wallet" });
+    if (error) {
+      console.warn("[useUser] Supabase sync failed:", error.message);
+    }
   } catch {
     // Sync not available — that's fine, local data is the source of truth
   }
